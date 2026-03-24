@@ -1,0 +1,441 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Compare Loans - Smart EMI Calculator</title>
+    <link rel="stylesheet" href="style.css">
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+    <!-- Supabase Client -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="js/supabase-config.js"></script>
+</head>
+<body>
+    <!-- Navigation -->
+    <div id="main-nav"></div>
+
+    <div class="app-container">
+        <!-- Header -->
+        <header class="app-header">
+            <h1>Loan Comparison</h1>
+            <div class="header-controls">
+                <div class="currency-selector">
+                    <label for="currency">Currency:</label>
+                    <select id="currency">
+                        <option value="INR" selected>₹ INR</option>
+                        <option value="USD">$ USD</option>
+                        <option value="EUR">€ EUR</option>
+                    </select>
+                </div>
+                <button id="theme-toggle" class="theme-btn" aria-label="Toggle Dark Mode">
+                    <span class="theme-icon">🌙</span>
+                </button>
+            </div>
+        </header>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <!-- Comparison Input Section -->
+            <section class="card">
+                <h2>Compare Multiple Loans</h2>
+                <p class="section-desc">Enter details for up to 3 loans to compare them side by side</p>
+                
+                <div class="compare-inputs-grid">
+                    <!-- Loan 1 -->
+                    <div class="compare-loan-card">
+                        <h3>Loan 1</h3>
+                        <div class="form-group">
+                            <label>Loan Name</label>
+                            <input type="text" id="compare-loan1-name" placeholder="e.g., Bank A">
+                        </div>
+                        <div class="form-group">
+                            <label>Loan Amount</label>
+                            <input type="number" id="compare-loan1-amount" placeholder="Enter amount">
+                        </div>
+                        <div class="form-group">
+                            <label>Interest Rate (%)</label>
+                            <input type="number" id="compare-loan1-rate" step="0.1" placeholder="Enter rate">
+                        </div>
+                        <div class="form-group">
+                            <label>Tenure (Years)</label>
+                            <input type="number" id="compare-loan1-tenure" placeholder="Enter years">
+                        </div>
+                    </div>
+
+                    <!-- Loan 2 -->
+                    <div class="compare-loan-card">
+                        <h3>Loan 2</h3>
+                        <div class="form-group">
+                            <label>Loan Name</label>
+                            <input type="text" id="compare-loan2-name" placeholder="e.g., Bank B">
+                        </div>
+                        <div class="form-group">
+                            <label>Loan Amount</label>
+                            <input type="number" id="compare-loan2-amount" placeholder="Enter amount">
+                        </div>
+                        <div class="form-group">
+                            <label>Interest Rate (%)</label>
+                            <input type="number" id="compare-loan2-rate" step="0.1" placeholder="Enter rate">
+                        </div>
+                        <div class="form-group">
+                            <label>Tenure (Years)</label>
+                            <input type="number" id="compare-loan2-tenure" placeholder="Enter years">
+                        </div>
+                    </div>
+
+                    <!-- Loan 3 -->
+                    <div class="compare-loan-card">
+                        <h3>Loan 3 (Optional)</h3>
+                        <div class="form-group">
+                            <label>Loan Name</label>
+                            <input type="text" id="compare-loan3-name" placeholder="e.g., Bank C">
+                        </div>
+                        <div class="form-group">
+                            <label>Loan Amount</label>
+                            <input type="number" id="compare-loan3-amount" placeholder="Enter amount">
+                        </div>
+                        <div class="form-group">
+                            <label>Interest Rate (%)</label>
+                            <input type="number" id="compare-loan3-rate" step="0.1" placeholder="Enter rate">
+                        </div>
+                        <div class="form-group">
+                            <label>Tenure (Years)</label>
+                            <input type="number" id="compare-loan3-tenure" placeholder="Enter years">
+                        </div>
+                    </div>
+                </div>
+
+                <div class="form-actions">
+                    <button type="button" id="compare-btn" class="btn btn-primary">Compare Loans</button>
+                    <button type="button" id="clear-btn" class="btn btn-secondary">Clear All</button>
+                </div>
+            </section>
+
+            <!-- Comparison Results -->
+            <section class="card" id="comparison-results" style="display: none;">
+                <h2>Comparison Results</h2>
+                
+                <div class="results-summary">
+                    <div class="summary-cards" id="summary-cards">
+                        <!-- Dynamic content -->
+                    </div>
+                </div>
+
+                <div class="comparison-table-container">
+                    <table class="comparison-table full-width">
+                        <thead>
+                            <tr>
+                                <th>Parameter</th>
+                                <th id="th-loan1">Loan 1</th>
+                                <th id="th-loan2">Loan 2</th>
+                                <th id="th-loan3" style="display: none;">Loan 3</th>
+                            </tr>
+                        </thead>
+                        <tbody id="comparison-body">
+                            <!-- Dynamic content -->
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- Visual Comparison -->
+                <div class="visual-comparison">
+                    <h3>Visual Comparison</h3>
+                    <div class="charts-row">
+                        <div class="chart-box">
+                            <h4>Monthly EMI</h4>
+                            <canvas id="emi-bar-chart"></canvas>
+                        </div>
+                        <div class="chart-box">
+                            <h4>Total Interest</h4>
+                            <canvas id="interest-bar-chart"></canvas>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Recommendation -->
+                <div class="recommendation" id="recommendation">
+                    <!-- Dynamic recommendation -->
+                </div>
+            </section>
+        </main>
+
+        <!-- Footer -->
+        <footer class="app-footer">
+            <p>&copy; 2026 Smart EMI Calculator. All rights reserved.</p>
+        </footer>
+    </div>
+
+    <!-- Scripts -->
+    <script src="js/supabase-config.js"></script>
+    <script src="js/database.js"></script>
+    <script src="js/navigation.js"></script>
+    <script src="js/emi-calculation.js"></script>
+    
+    <script>
+        let emiBarChart = null;
+        let interestBarChart = null;
+        let comparedLoans = [];
+
+        document.addEventListener('DOMContentLoaded', async () => {
+            try {
+                // Check auth using Supabase directly
+                const { data, error } = await window.supabaseClient.auth.getSession();
+                console.log("Session:", data);
+                if (!data.session) {
+                    window.location.href = 'login.html';
+                    return;
+                }
+
+                NavigationManager.init();
+                setupEventListeners();
+            } catch (err) {
+                console.error('Comparison page initialization error:', err);
+                NavigationManager.init();
+                setupEventListeners();
+            }
+        });
+
+        function setupEventListeners() {
+            document.getElementById('compare-btn').addEventListener('click', compareLoans);
+            document.getElementById('clear-btn').addEventListener('click', clearAll);
+            
+            document.getElementById('currency').addEventListener('change', (e) => {
+                if (comparedLoans.length > 0) {
+                    updateComparisonDisplay();
+                }
+            });
+
+            document.getElementById('theme-toggle').addEventListener('click', toggleTheme);
+        }
+
+        function toggleTheme() {
+            const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+            if (isDark) {
+                document.documentElement.removeAttribute('data-theme');
+            } else {
+                document.documentElement.setAttribute('data-theme', 'dark');
+            }
+        }
+
+        function compareLoans() {
+            const loans = [];
+            const currency = document.getElementById('currency').value;
+
+            // Collect loan data
+            for (let i = 1; i <= 3; i++) {
+                const amount = parseFloat(document.getElementById(`compare-loan${i}-amount`).value);
+                const rate = parseFloat(document.getElementById(`compare-loan${i}-rate`).value);
+                const tenure = parseFloat(document.getElementById(`compare-loan${i}-tenure`).value);
+                const name = document.getElementById(`compare-loan${i}-name`).value || `Loan ${i}`;
+
+                if (amount && rate && tenure) {
+                    const emiData = EMICalculation.calculateEMI(amount, rate, tenure);
+                    if (emiData) {
+                        loans.push({
+                            name,
+                            amount,
+                            rate,
+                            tenure,
+                            emi: emiData.emi,
+                            totalInterest: emiData.totalInterest,
+                            totalPayment: emiData.totalPayment,
+                            monthlyRate: emiData.monthlyRate,
+                            totalMonths: emiData.totalMonths
+                        });
+                    }
+                }
+            }
+
+            if (loans.length < 2) {
+                alert('Please enter details for at least 2 loans to compare');
+                return;
+            }
+
+            comparedLoans = loans;
+            document.getElementById('comparison-results').style.display = 'block';
+            updateComparisonDisplay();
+        }
+
+        function updateComparisonDisplay() {
+            const currency = document.getElementById('currency').value;
+            const loans = comparedLoans;
+
+            // Update table headers
+            document.getElementById('th-loan1').textContent = loans[0].name;
+            document.getElementById('th-loan2').textContent = loans[1].name;
+            
+            if (loans.length > 2) {
+                document.getElementById('th-loan3').style.display = '';
+                document.getElementById('th-loan3').textContent = loans[2].name;
+            } else {
+                document.getElementById('th-loan3').style.display = 'none';
+            }
+
+            // Summary cards
+            const summaryCards = document.getElementById('summary-cards');
+            let cardsHtml = '';
+            
+            // Find best values
+            const lowestEMI = Math.min(...loans.map(l => l.emi));
+            const lowestInterest = Math.min(...loans.map(l => l.totalInterest));
+            const lowestPayment = Math.min(...loans.map(l => l.totalPayment));
+
+            loans.forEach((loan, index) => {
+                const isLowestEMI = loan.emi === lowestEMI;
+                const isLowestInterest = loan.totalInterest === lowestInterest;
+                const isLowestPayment = loan.totalPayment === lowestPayment;
+                
+                cardsHtml += `
+                    <div class="summary-card">
+                        <h4>${loan.name}</h4>
+                        <div class="card-stats">
+                            <div class="stat ${isLowestEMI ? 'highlight' : ''}">
+                                <span>EMI</span>
+                                <strong>${EMICalculation.formatCurrency(loan.emi, currency)}</strong>
+                                ${isLowestEMI ? '<span class="badge">Lowest</span>' : ''}
+                            </div>
+                            <div class="stat ${isLowestInterest ? 'highlight' : ''}">
+                                <span>Interest</span>
+                                <strong>${EMICalculation.formatCurrency(loan.totalInterest, currency)}</strong>
+                                ${isLowestInterest ? '<span class="badge">Lowest</span>' : ''}
+                            </div>
+                            <div class="stat ${isLowestPayment ? 'highlight' : ''}">
+                                <span>Total</span>
+                                <strong>${EMICalculation.formatCurrency(loan.totalPayment, currency)}</strong>
+                                ${isLowestPayment ? '<span class="badge">Lowest</span>' : ''}
+                            </div>
+                        </div>
+                    </div>
+                `;
+            });
+            summaryCards.innerHTML = cardsHtml;
+
+            // Comparison table
+            const tbody = document.getElementById('comparison-body');
+            tbody.innerHTML = `
+                <tr>
+                    <td>Loan Amount</td>
+                    ${loans.map(l => `<td>${EMICalculation.formatCurrency(l.amount, currency)}</td>`).join('')}
+                </tr>
+                <tr>
+                    <td>Interest Rate</td>
+                    ${loans.map(l => `<td>${l.rate}%</td>`).join('')}
+                </tr>
+                <tr>
+                    <td>Tenure</td>
+                    ${loans.map(l => `<td>${l.tenure} years</td>`).join('')}
+                </tr>
+                <tr>
+                    <td><strong>Monthly EMI</strong></td>
+                    ${loans.map(l => `<td><strong>${EMICalculation.formatCurrency(l.emi, currency)}</strong></td>`).join('')}
+                </tr>
+                <tr>
+                    <td>Total Interest</td>
+                    ${loans.map(l => `<td>${EMICalculation.formatCurrency(l.totalInterest, currency)}</td>`).join('')}
+                </tr>
+                <tr>
+                    <td>Total Payment</td>
+                    ${loans.map(l => `<td>${EMICalculation.formatCurrency(l.totalPayment, currency)}</td>`).join('')}
+                </tr>
+                <tr>
+                    <td>Interest % of Total</td>
+                    ${loans.map(l => `<td>${((l.totalInterest / l.totalPayment) * 100).toFixed(1)}%</td>`).join('')}
+                </tr>
+            `;
+
+            // Charts
+            updateCharts(loans, currency);
+
+            // Recommendation
+            const recommendation = document.getElementById('recommendation');
+            const bestLoan = loans.find(l => l.totalPayment === lowestPayment) || loans[0];
+            const savings = lowestPayment < loans[0].totalPayment ? 
+                loans[0].totalPayment - lowestPayment : 0;
+            
+            recommendation.innerHTML = `
+                <div class="recommendation-box">
+                    <h4>🎯 Recommendation</h4>
+                    <p><strong>${bestLoan.name}</strong> is the most cost-effective option with the lowest total payment.</p>
+                    ${savings > 0 ? `<p>Choosing this loan saves you <strong>${EMICalculation.formatCurrency(savings, currency)}</strong> compared to the first option.</p>` : ''}
+                </div>
+            `;
+        }
+
+        function updateCharts(loans, currency) {
+            const labels = loans.map(l => l.name);
+            const emiData = loans.map(l => l.emi);
+            const interestData = loans.map(l => l.totalInterest);
+
+            // EMI Bar Chart
+            const emiCtx = document.getElementById('emi-bar-chart').getContext('2d');
+            if (emiBarChart) emiBarChart.destroy();
+            
+            emiBarChart = new Chart(emiCtx, {
+                type: 'bar',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: 'Monthly EMI',
+                        data: emiData,
+                        backgroundColor: ['#2563eb', '#10b981', '#f59e0b']
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    plugins: {
+                        legend: { display: false }
+                    },
+                    scales: {
+                        y: {
+                            ticks: {
+                                callback: value => EMICalculation.formatCurrency(value, currency)
+                            }
+                        }
+                    }
+                }
+            });
+
+            // Interest Bar Chart
+            const interestCtx = document.getElementById('interest-bar-chart').getContext('2d');
+            if (interestBarChart) interestBarChart.destroy();
+            
+            interestBarChart = new Chart(interestCtx, {
+                type: 'bar',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: 'Total Interest',
+                        data: interestData,
+                        backgroundColor: ['#ef4444', '#8b5cf6', '#ec4899']
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    plugins: {
+                        legend: { display: false }
+                    },
+                    scales: {
+                        y: {
+                            ticks: {
+                                callback: value => EMICalculation.formatCurrency(value, currency)
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        function clearAll() {
+            for (let i = 1; i <= 3; i++) {
+                document.getElementById(`compare-loan${i}-name`).value = '';
+                document.getElementById(`compare-loan${i}-amount`).value = '';
+                document.getElementById(`compare-loan${i}-rate`).value = '';
+                document.getElementById(`compare-loan${i}-tenure`).value = '';
+            }
+            document.getElementById('comparison-results').style.display = 'none';
+            comparedLoans = [];
+        }
+    </script>
+</body>
+</html>

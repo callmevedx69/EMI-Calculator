@@ -1,0 +1,521 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard - Smart EMI Calculator</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="css/dashboard.css">
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+    <!-- Supabase Client -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="js/supabase-config.js"></script>
+</head>
+<body>
+    <!-- Navigation -->
+    <div id="main-nav"></div>
+
+    <div class="app-container">
+        <!-- Header -->
+        <header class="page-header">
+            <div class="header-content">
+                <h1>Dashboard</h1>
+                <p id="welcome-message">Welcome back!</p>
+            </div>
+            <div class="header-controls">
+                <div class="currency-selector">
+                    <label for="currency">Currency:</label>
+                    <select id="currency">
+                        <option value="INR" selected>₹ INR</option>
+                        <option value="USD">$ USD</option>
+                        <option value="EUR">€ EUR</option>
+                    </select>
+                </div>
+                <button id="theme-toggle" class="theme-btn" aria-label="Toggle Dark Mode">
+                    <span class="theme-icon">🌙</span>
+                </button>
+            </div>
+        </header>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <!-- Stats Cards -->
+            <section class="stats-section">
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <div class="stat-icon">📋</div>
+                        <div class="stat-info">
+                            <span class="stat-label">Total Loans</span>
+                            <span class="stat-value" id="total-loans">0</span>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon">💰</div>
+                        <div class="stat-info">
+                            <span class="stat-label">Total Loan Amount</span>
+                            <span class="stat-value" id="total-amount">₹0</span>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon">📊</div>
+                        <div class="stat-info">
+                            <span class="stat-label">Monthly EMI Burden</span>
+                            <span class="stat-value" id="total-emi">₹0</span>
+                        </div>
+                    </div>
+                    <div class="stat-card highlight">
+                        <div class="stat-icon">🎯</div>
+                        <div class="stat-info">
+                            <span class="stat-label">Available Income</span>
+                            <span class="stat-value" id="available-income">-</span>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Loan Affordability Engine -->
+            <section class="affordability-section card">
+                <h2>💡 Loan Affordability Engine</h2>
+                <p class="section-desc">Check if you can afford a new loan based on your income and existing commitments</p>
+                
+                <form id="affordability-form" class="affordability-form">
+                    <div class="affordability-grid">
+                        <div class="form-group">
+                            <label for="monthly-salary">Monthly Salary (Net Income)</label>
+                            <input type="number" id="monthly-salary" placeholder="Enter monthly salary" min="0">
+                        </div>
+                        <div class="form-group">
+                            <label for="monthly-expenses">Monthly Expenses</label>
+                            <input type="number" id="monthly-expenses" placeholder="Enter monthly expenses" min="0">
+                        </div>
+                        <div class="form-group">
+                            <label for="existing-emi-1">Existing EMI 1</label>
+                            <input type="number" id="existing-emi-1" placeholder="Enter existing EMI" min="0" value="0">
+                        </div>
+                        <div class="form-group">
+                            <label for="existing-emi-2">Existing EMI 2</label>
+                            <input type="number" id="existing-emi-2" placeholder="Enter existing EMI" min="0" value="0">
+                        </div>
+                    </div>
+                    <div class="form-actions">
+                        <button type="button" id="calculate-affordability" class="btn btn-primary">Check Affordability</button>
+                    </div>
+                </form>
+
+                <div id="affordability-results" class="affordability-results" style="display: none;">
+                    <div class="results-header">
+                        <h3>Affordability Analysis</h3>
+                        <span id="eligibility-badge" class="badge">-</span>
+                    </div>
+                    <div class="results-grid">
+                        <div class="result-card">
+                            <span class="result-label">Available Income</span>
+                            <span class="result-value" id="afford-available-income">₹0</span>
+                        </div>
+                        <div class="result-card">
+                            <span class="result-label">Max EMI Allowed (40% of Salary)</span>
+                            <span class="result-value" id="afford-max-emi">₹0</span>
+                        </div>
+                        <div class="result-card">
+                            <span class="result-label">Total Existing EMIs</span>
+                            <span class="result-value" id="afford-existing-emis">₹0</span>
+                        </div>
+                        <div class="result-card">
+                            <span class="result-label">Risk Level</span>
+                            <span class="result-value" id="afford-risk-level">-</span>
+                        </div>
+                    </div>
+                    <div class="safe-range">
+                        <h4>Safe EMI Range</h4>
+                        <p>Your safe EMI range: <strong id="safe-emi-range">₹0 - ₹0</strong></p>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Smart Insights -->
+            <section class="insights-section card" id="insights-section" style="display: none;">
+                <h2>🧠 Smart Insights</h2>
+                <div id="smart-insights" class="insights-list">
+                    <!-- Insights will be populated dynamically -->
+                </div>
+            </section>
+
+            <!-- Quick Calculator -->
+            <section class="quick-calc-section card">
+                <h2>🧮 Quick Loan Calculator</h2>
+                <form id="quick-calc-form" class="quick-calc-form">
+                    <div class="quick-calc-grid">
+                        <div class="form-group">
+                            <label for="quick-amount">Loan Amount</label>
+                            <input type="number" id="quick-amount" placeholder="Enter amount" min="1">
+                        </div>
+                        <div class="form-group">
+                            <label for="quick-rate">Interest Rate (%)</label>
+                            <input type="number" id="quick-rate" placeholder="Annual rate" min="0.1" step="0.1" value="10">
+                        </div>
+                        <div class="form-group">
+                            <label for="quick-tenure">Tenure (Years)</label>
+                            <input type="number" id="quick-tenure" placeholder="Years" min="1" value="5">
+                        </div>
+                    </div>
+                    <div class="form-actions">
+                        <button type="button" id="quick-calculate" class="btn btn-primary">Calculate</button>
+                        <button type="button" id="quick-save" class="btn btn-secondary">Save Loan</button>
+                    </div>
+                </form>
+                <div id="quick-results" class="quick-results" style="display: none;">
+                    <div class="quick-summary">
+                        <div class="quick-emi">
+                            <span class="quick-label">Monthly EMI</span>
+                            <span class="quick-value" id="quick-emi-value">₹0</span>
+                        </div>
+                        <div class="quick-total">
+                            <span class="quick-label">Total Interest</span>
+                            <span class="quick-value" id="quick-interest-value">₹0</span>
+                        </div>
+                        <div class="quick-total">
+                            <span class="quick-label">Total Payment</span>
+                            <span class="quick-value" id="quick-payment-value">₹0</span>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Recent Loans -->
+            <section class="recent-loans-section card">
+                <h2>📋 Recent Loans</h2>
+                <div id="recent-loans" class="recent-loans-list">
+                    <p class="no-data">No saved loans yet</p>
+                </div>
+                <div class="section-actions">
+                    <a href="calculator.html" class="btn btn-primary">Go to Calculator</a>
+                    <a href="profile.html" class="btn btn-secondary">View All Loans</a>
+                </div>
+            </section>
+        </main>
+
+        <!-- Footer -->
+        <footer class="app-footer">
+            <p>&copy; 2026 Smart EMI Calculator. All rights reserved.</p>
+        </footer>
+    </div>
+
+    <!-- Scripts -->
+    <script src="js/supabase-config.js"></script>
+    <script src="js/database.js"></script>
+    <script src="js/navigation.js"></script>
+    <script src="js/emi-calculation.js"></script>
+    <script src="js/charts.js"></script>
+    
+    <script>
+        // App State
+        const AppState = {
+            currency: 'INR',
+            isDarkMode: false,
+            currentQuickEMI: null
+        };
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', async () => {
+            try {
+                // Check auth using Supabase directly
+                const { data, error } = await window.supabaseClient.auth.getSession();
+                console.log("Session:", data);
+                if (!data.session) {
+                    window.location.href = 'login.html';
+                    return;
+                }
+
+                // Initialize navigation
+                NavigationManager.init();
+
+                // Setup event listeners
+                setupEventListeners();
+
+                // Load user data
+                loadDashboardData();
+            } catch (err) {
+                console.error('Dashboard initialization error:', err);
+                // Still render the page even if there's an error
+                NavigationManager.init();
+                setupEventListeners();
+                loadDashboardData();
+            }
+        });
+
+        function setupEventListeners() {
+            // Currency
+            document.getElementById('currency').addEventListener('change', (e) => {
+                AppState.currency = e.target.value;
+                loadDashboardData();
+            });
+
+            // Theme toggle
+            document.getElementById('theme-toggle').addEventListener('click', toggleTheme);
+
+            // Affordability calculation
+            document.getElementById('calculate-affordability').addEventListener('click', calculateAffordability);
+
+            // Quick calculator
+            document.getElementById('quick-calculate').addEventListener('click', calculateQuickEMI);
+            document.getElementById('quick-save').addEventListener('click', saveQuickLoan);
+        }
+
+        function toggleTheme() {
+            AppState.isDarkMode = !AppState.isDarkMode;
+            if (AppState.isDarkMode) {
+                document.documentElement.setAttribute('data-theme', 'dark');
+            } else {
+                document.documentElement.removeAttribute('data-theme');
+            }
+        }
+
+        // Load dashboard data
+        async function loadDashboardData() {
+            const user = AuthManager.getCurrentUser();
+            if (!user) return;
+
+            // Update welcome message
+            document.getElementById('welcome-message').textContent = `Welcome, ${user.email}!`;
+
+            // Load stats
+            const statsResult = await DatabaseManager.getDashboardStats();
+            if (statsResult.success) {
+                updateStats(statsResult.stats);
+            }
+
+            // Load recent loans
+            const loansResult = await DatabaseManager.getUserLoans();
+            if (loansResult.success) {
+                renderRecentLoans(loansResult.loans);
+                if (loansResult.loans.length > 0) {
+                    generateSmartInsights(loansResult.loans[0]);
+                }
+            }
+        }
+
+        function updateStats(stats) {
+            document.getElementById('total-loans').textContent = stats.totalLoans;
+            document.getElementById('total-amount').textContent = EMICalculation.formatCurrency(stats.totalAmount, AppState.currency);
+            document.getElementById('total-emi').textContent = EMICalculation.formatCurrency(stats.totalEMI, AppState.currency);
+        }
+
+        function renderRecentLoans(loans) {
+            const container = document.getElementById('recent-loans');
+            
+            if (!loans || loans.length === 0) {
+                container.innerHTML = '<p class="no-data">No saved loans yet</p>';
+                return;
+            }
+
+            let html = '';
+            const displayLoans = loans.slice(0, 5); // Show max 5 recent
+
+            displayLoans.forEach(loan => {
+                html += `
+                    <div class="recent-loan-item">
+                        <div class="loan-info">
+                            <h4>${escapeHtml(loan.loan_name)}</h4>
+                            <p>${EMICalculation.formatCurrency(loan.amount, loan.currency || 'INR')} | ${loan.interest_rate}% | ${loan.tenure} years</p>
+                            <p class="loan-emi">EMI: ${EMICalculation.formatCurrency(loan.emi, loan.currency || 'INR')}</p>
+                        </div>
+                        <div class="loan-date">
+                            ${new Date(loan.created_at).toLocaleDateString()}
+                        </div>
+                    </div>
+                `;
+            });
+
+            container.innerHTML = html;
+        }
+
+        // Affordability Engine
+        function calculateAffordability() {
+            const salary = parseFloat(document.getElementById('monthly-salary').value) || 0;
+            const expenses = parseFloat(document.getElementById('monthly-expenses').value) || 0;
+            const existingEMI1 = parseFloat(document.getElementById('existing-emi-1').value) || 0;
+            const existingEMI2 = parseFloat(document.getElementById('existing-emi-2').value) || 0;
+
+            if (salary <= 0) {
+                alert('Please enter your monthly salary');
+                return;
+            }
+
+            // Calculations
+            const totalExistingEMIs = existingEMI1 + existingEMI2;
+            const availableIncome = salary - expenses - totalExistingEMIs;
+            const maxEMIAllowed = salary * 0.40; // 40% rule
+            const safeEMIMin = salary * 0.10; // Minimum safe EMI
+            const safeEMIMax = maxEMIAllowed - totalExistingEMIs;
+
+            // Risk assessment
+            let riskLevel = 'Low';
+            const emiToIncomeRatio = (totalExistingEMIs + maxEMIAllowed) / salary;
+            
+            if (emiToIncomeRatio > 0.50) {
+                riskLevel = 'High';
+            } else if (emiToIncomeRatio > 0.35) {
+                riskLevel = 'Medium';
+            }
+
+            // Eligibility
+            const isEligible = availableIncome > 0 && safeEMIMax > 0;
+
+            // Display results
+            document.getElementById('affordability-results').style.display = 'block';
+            document.getElementById('afford-available-income').textContent = EMICalculation.formatCurrency(availableIncome, AppState.currency);
+            document.getElementById('afford-max-emi').textContent = EMICalculation.formatCurrency(maxEMIAllowed, AppState.currency);
+            document.getElementById('afford-existing-emis').textContent = EMICalculation.formatCurrency(totalExistingEMIs, AppState.currency);
+            document.getElementById('afford-risk-level').textContent = riskLevel;
+
+            const badge = document.getElementById('eligibility-badge');
+            if (isEligible) {
+                badge.textContent = 'Eligible';
+                badge.className = 'badge badge-success';
+            } else {
+                badge.textContent = 'Not Eligible';
+                badge.className = 'badge badge-danger';
+            }
+
+            // Safe range
+            document.getElementById('safe-emi-range').textContent = 
+                `${EMICalculation.formatCurrency(Math.max(0, safeEMIMin), AppState.currency)} - ${EMICalculation.formatCurrency(Math.max(0, safeEMIMax), AppState.currency)}`;
+
+            // Update available income in stats
+            document.getElementById('available-income').textContent = EMICalculation.formatCurrency(Math.max(0, availableIncome), AppState.currency);
+        }
+
+        // Quick Calculator
+        function calculateQuickEMI() {
+            const amount = parseFloat(document.getElementById('quick-amount').value);
+            const rate = parseFloat(document.getElementById('quick-rate').value);
+            const tenure = parseFloat(document.getElementById('quick-tenure').value);
+
+            if (!amount || !rate || !tenure) {
+                alert('Please fill in all loan details');
+                return;
+            }
+
+            const emiData = EMICalculation.calculateEMI(amount, rate, tenure);
+            
+            if (emiData) {
+                AppState.currentQuickEMI = emiData;
+                
+                document.getElementById('quick-results').style.display = 'block';
+                document.getElementById('quick-emi-value').textContent = EMICalculation.formatCurrency(emiData.emi, AppState.currency);
+                document.getElementById('quick-interest-value').textContent = EMICalculation.formatCurrency(emiData.totalInterest, AppState.currency);
+                document.getElementById('quick-payment-value').textContent = EMICalculation.formatCurrency(emiData.totalPayment, AppState.currency);
+            }
+        }
+
+        async function saveQuickLoan() {
+            if (!AppState.currentQuickEMI) {
+                alert('Please calculate EMI first');
+                return;
+            }
+
+            const name = prompt('Enter loan name:', 'My Loan');
+            if (!name) return;
+
+            const loanData = {
+                name: name,
+                amount: document.getElementById('quick-amount').value,
+                interestRate: document.getElementById('quick-rate').value,
+                tenure: document.getElementById('quick-tenure').value,
+                emi: AppState.currentQuickEMI.emi,
+                totalInterest: AppState.currentQuickEMI.totalInterest,
+                totalPayment: AppState.currentQuickEMI.totalPayment,
+                currency: AppState.currency
+            };
+
+            const result = await DatabaseManager.saveLoan(loanData);
+            
+            if (result.success) {
+                alert('Loan saved successfully!');
+                loadDashboardData();
+            } else {
+                alert('Error saving loan: ' + result.error);
+            }
+        }
+
+        // Smart Insights
+        function generateSmartInsights(loan) {
+            const section = document.getElementById('insights-section');
+            const container = document.getElementById('smart-insights');
+            
+            section.style.display = 'block';
+
+            const insights = [];
+
+            // Insight 1: Increase EMI suggestion
+            const currentEMI = loan.emi;
+            const increaseAmount = currentEMI * 0.10; // 10% increase
+            const newEMI = currentEMI + increaseAmount;
+            const principal = loan.amount;
+            const rate = loan.interest_rate;
+            const tenure = loan.tenure;
+
+            // Calculate with higher EMI
+            const newCalculation = EMICalculation.calculateWithPrepayment(principal, rate, tenure, increaseAmount);
+            
+            if (newCalculation && newCalculation.interestSaved > 0) {
+                const yearsSaved = (loan.tenure * 12 - newCalculation.newTotalMonths) / 12;
+                insights.push({
+                    icon: '⚡',
+                    title: 'Reduce Your Tenure',
+                    description: `Increase your EMI by ${EMICalculation.formatCurrency(increaseAmount, loan.currency || 'INR')} to reduce your tenure by ${yearsSaved.toFixed(1)} years and save ${EMICalculation.formatCurrency(newCalculation.interestSaved, loan.currency || 'INR')} in interest!`
+                });
+            }
+
+            // Insight 2: Total interest analysis
+            const interestPercentage = (loan.total_interest / loan.total_payment * 100).toFixed(1);
+            if (interestPercentage > 30) {
+                insights.push({
+                    icon: '📈',
+                    title: 'High Interest Alert',
+                    description: `Your loan has ${interestPercentage}% of total payment going towards interest. Consider making prepayments to reduce this.`
+                });
+            }
+
+            // Insight 3: Monthly payment insight
+            insights.push({
+                icon: '💡',
+                title: 'Monthly Payment',
+                description: `Your monthly EMI of ${EMICalculation.formatCurrency(currentEMI, loan.currency || 'INR')} represents ${((currentEMI / (loan.amount / loan.tenure / 12)) * 100).toFixed(1)}% of the principal per month.`
+            });
+
+            // Insight 4: Tenure advice
+            if (loan.tenure > 15) {
+                insights.push({
+                    icon: '⏰',
+                    title: 'Long Tenure Warning',
+                    description: 'A tenure of more than 15 years results in paying significantly more interest. Consider a shorter tenure if your budget allows.'
+                });
+            }
+
+            // Render insights
+            let html = '';
+            insights.forEach(insight => {
+                html += `
+                    <div class="insight-item">
+                        <div class="insight-icon">${insight.icon}</div>
+                        <div class="insight-content">
+                            <h4>${insight.title}</h4>
+                            <p>${insight.description}</p>
+                        </div>
+                    </div>
+                `;
+            });
+
+            container.innerHTML = html;
+        }
+
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+    </script>
+</body>
+</html>

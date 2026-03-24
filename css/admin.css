@@ -1,0 +1,247 @@
+/* Admin Panel Styles */
+
+.admin-header {
+    background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
+}
+
+.admin-badge {
+    background: #f59e0b;
+    color: #000;
+    padding: 0.5rem 1rem;
+    border-radius: 20px;
+    font-size: 0.75rem;
+    font-weight: 700;
+    text-transform: uppercase;
+}
+
+/* Admin Info */
+.admin-info {
+    border-left: 4px solid #f59e0b;
+}
+
+.admin-info p {
+    color: var(--text-secondary);
+    margin-bottom: 1.5rem;
+}
+
+.admin-stats {
+    display: flex;
+    gap: 2rem;
+    flex-wrap: wrap;
+}
+
+.admin-stat {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 1.5rem;
+    background: var(--background);
+    border-radius: var(--radius-sm);
+    min-width: 150px;
+}
+
+.admin-stat .stat-number {
+    font-size: 2rem;
+    font-weight: 700;
+    color: var(--primary-color);
+}
+
+.admin-stat .stat-label {
+    font-size: 0.875rem;
+    color: var(--text-secondary);
+    margin-top: 0.5rem;
+}
+
+/* Section Header */
+.section-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1.5rem;
+    flex-wrap: wrap;
+    gap: 1rem;
+}
+
+.section-header h2 {
+    margin: 0;
+    border: none;
+    padding: 0;
+}
+
+/* Table Filters */
+.table-filters {
+    display: flex;
+    gap: 1rem;
+    margin-bottom: 1.5rem;
+    flex-wrap: wrap;
+}
+
+.search-input {
+    flex: 1;
+    min-width: 200px;
+    padding: 0.75rem;
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-sm);
+    background: var(--background);
+    color: var(--text-primary);
+    font-size: 0.95rem;
+}
+
+.search-input:focus {
+    outline: none;
+    border-color: var(--primary-color);
+}
+
+.table-filters select {
+    padding: 0.75rem;
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-sm);
+    background: var(--surface);
+    color: var(--text-primary);
+    cursor: pointer;
+}
+
+/* Admin Table */
+.table-container {
+    overflow-x: auto;
+}
+
+.admin-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.9rem;
+}
+
+.admin-table th {
+    background: var(--primary-color);
+    color: white;
+    padding: 1rem;
+    text-align: left;
+    white-space: nowrap;
+}
+
+.admin-table td {
+    padding: 0.75rem 1rem;
+    border-bottom: 1px solid var(--border-color);
+    vertical-align: middle;
+}
+
+.admin-table .loan-id,
+.admin-table .user-id {
+    font-family: monospace;
+    font-size: 0.8rem;
+    color: var(--text-secondary);
+}
+
+.admin-table tbody tr:hover {
+    background: var(--surface-hover);
+}
+
+.admin-table .loading,
+.admin-table .no-data {
+    text-align: center;
+    color: var(--text-secondary);
+    padding: 2rem;
+}
+
+.admin-table .error {
+    color: var(--danger-color);
+    text-align: center;
+    padding: 2rem;
+}
+
+/* Buttons */
+.btn-sm {
+    padding: 0.4rem 0.75rem;
+    font-size: 0.8rem;
+}
+
+.btn-danger {
+    background: var(--danger-color);
+    color: white;
+}
+
+.btn-danger:hover {
+    background: #dc2626;
+}
+
+/* Pagination */
+.pagination {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 0.5rem;
+    margin-top: 1.5rem;
+    flex-wrap: wrap;
+}
+
+.pagination .ellipsis {
+    padding: 0.5rem;
+    color: var(--text-secondary);
+}
+
+/* System Info */
+.system-info {
+    display: grid;
+    gap: 1rem;
+}
+
+.info-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1rem;
+    background: var(--background);
+    border-radius: var(--radius-sm);
+}
+
+.info-label {
+    color: var(--text-secondary);
+    font-weight: 500;
+}
+
+.info-value {
+    font-weight: 600;
+}
+
+.status-active {
+    color: var(--accent-color);
+}
+
+.status-inactive {
+    color: var(--danger-color);
+}
+
+/* Delete Modal */
+.delete-info {
+    background: var(--background);
+    padding: 0.75rem;
+    border-radius: var(--radius-sm);
+    font-family: monospace;
+    margin: 1rem 0;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .admin-stats {
+        flex-direction: column;
+    }
+
+    .admin-stat {
+        width: 100%;
+    }
+
+    .table-filters {
+        flex-direction: column;
+    }
+
+    .table-filters select {
+        width: 100%;
+    }
+
+    .info-item {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 0.5rem;
+    }
+}

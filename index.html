@@ -5,243 +5,63 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Smart EMI Loan Calculator</title>
     <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="css/auth.css">
     <!-- Chart.js -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
     <!-- jsPDF -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <!-- Supabase Client -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="js/supabase-config.js"></script>
 </head>
-<body>
-    <div class="app-container">
-        <!-- Header -->
-        <header class="app-header">
+<body class="landing-page">
+    <!-- Redirect to dashboard if already logged in -->
+    <script>
+        // Check if user is already logged in
+        document.addEventListener("DOMContentLoaded", async () => {
+            try {
+                const { data, error } = await window.supabaseClient.auth.getSession();
+                console.log("Session:", data);
+                if (data.session) {
+                    window.location.href = 'dashboard.html';
+                }
+            } catch (err) {
+                console.error("Session error:", err);
+            }
+        });
+    </script>
+    <div class="landing-container">
+        <div class="landing-hero">
             <h1>Smart EMI Calculator</h1>
-            <div class="header-controls">
-                <div class="currency-selector">
-                    <label for="currency">Currency:</label>
-                    <select id="currency">
-                        <option value="INR" selected>₹ INR</option>
-                        <option value="USD">$ USD</option>
-                        <option value="EUR">€ EUR</option>
-                    </select>
+            <p class="tagline">Advanced Loan Management System</p>
+            
+            <div class="landing-features">
+                <div class="feature">
+                    <span class="feature-icon">🔐</span>
+                    <h3>Secure Login</h3>
+                    <p>Your data is protected with user authentication</p>
                 </div>
-                <button id="theme-toggle" class="theme-btn" aria-label="Toggle Dark Mode">
-                    <span class="theme-icon">🌙</span>
-                </button>
+                <div class="feature">
+                    <span class="feature-icon">📊</span>
+                    <h3>Loan Analytics</h3>
+                    <p>Detailed insights and affordability checks</p>
+                </div>
+                <div class="feature">
+                    <span class="feature-icon">💾</span>
+                    <h3>Cloud Storage</h3>
+                    <p>Save and access your loans anywhere</p>
+                </div>
+                <div class="feature">
+                    <span class="feature-icon">📄</span>
+                    <h3>PDF Reports</h3>
+                    <p>Generate detailed loan reports</p>
+                </div>
             </div>
-        </header>
-
-        <!-- Main Content -->
-        <main class="main-content">
-            <!-- EMI Calculator Section -->
-            <section class="calculator-section card">
-                <h2>EMI Calculator</h2>
-                <form id="emi-form" class="emi-form">
-                    <div class="form-group">
-                        <label for="loan-amount">Loan Amount</label>
-                        <input type="number" id="loan-amount" min="1" placeholder="Enter loan amount" required>
-                    </div>
-                    
-                    <div class="form-group">
-                        <label for="interest-rate">Annual Interest Rate (%)</label>
-                        <div class="slider-container">
-                            <input type="range" id="interest-slider" min="1" max="20" step="0.1" value="10">
-                            <input type="number" id="interest-rate" min="0.1" max="30" step="0.1" placeholder="Enter rate" required>
-                            <span class="slider-value" id="interest-value">10%</span>
-                        </div>
-                    </div>
-                    
-                    <div class="form-group">
-                        <label for="loan-tenure">Loan Tenure (Years)</label>
-                        <div class="slider-container">
-                            <input type="range" id="tenure-slider" min="1" max="30" step="1" value="5">
-                            <input type="number" id="loan-tenure" min="1" max="40" placeholder="Enter years" required>
-                            <span class="slider-value" id="tenure-value">5 years</span>
-                        </div>
-                    </div>
-                    
-                    <div class="form-actions">
-                        <button type="button" id="reset-btn" class="btn btn-secondary">Reset</button>
-                        <button type="button" id="save-loan-btn" class="btn btn-primary">Save Loan</button>
-                        <button type="button" id="download-pdf-btn" class="btn btn-accent">Download PDF</button>
-                    </div>
-                </form>
-            </section>
-
-            <!-- Loan Summary Section -->
-            <section class="summary-section card">
-                <h2>Loan Summary</h2>
-                <div class="summary-grid" id="loan-summary">
-                    <div class="summary-item">
-                        <span class="summary-label">Monthly EMI</span>
-                        <span class="summary-value" id="monthly-emi">₹0</span>
-                    </div>
-                    <div class="summary-item">
-                        <span class="summary-label">Total Interest</span>
-                        <span class="summary-value" id="total-interest">₹0</span>
-                    </div>
-                    <div class="summary-item">
-                        <span class="summary-label">Total Payment</span>
-                        <span class="summary-value" id="total-payment">₹0</span>
-                    </div>
-                    <div class="summary-item">
-                        <span class="summary-label">Loan Period</span>
-                        <span class="summary-value" id="loan-period">0 months</span>
-                    </div>
-                </div>
-            </section>
-
-            <!-- Charts Section -->
-            <section class="charts-section card">
-                <h2>EMI Charts</h2>
-                <div class="charts-grid">
-                    <div class="chart-container">
-                        <h3>Principal vs Interest</h3>
-                        <canvas id="pie-chart"></canvas>
-                    </div>
-                    <div class="chart-container">
-                        <h3>Balance Over Time</h3>
-                        <canvas id="line-chart"></canvas>
-                    </div>
-                </div>
-            </section>
-
-            <!-- EMI Payment Schedule -->
-            <section class="schedule-section card">
-                <h2>EMI Payment Schedule</h2>
-                <div class="table-container">
-                    <table id="schedule-table">
-                        <thead>
-                            <tr>
-                                <th>Month</th>
-                                <th>EMI</th>
-                                <th>Principal</th>
-                                <th>Interest</th>
-                                <th>Balance</th>
-                            </tr>
-                        </thead>
-                        <tbody id="schedule-body">
-                            <tr>
-                                <td colspan="5" class="no-data">Enter loan details to see payment schedule</td>
-                            </tr>
-                        </tbody>
-                    </table>
-                </div>
-            </section>
-
-            <!-- Prepayment Calculator -->
-            <section class="prepayment-section card">
-                <h2>Prepayment Calculator</h2>
-                <form id="prepayment-form">
-                    <div class="form-group">
-                        <label for="prepayment-amount">Additional Payment (per month)</label>
-                        <input type="number" id="prepayment-amount" min="0" placeholder="Enter extra payment">
-                    </div>
-                    <button type="button" id="calculate-prepayment-btn" class="btn btn-primary">Calculate Impact</button>
-                </form>
-                <div class="prepayment-results" id="prepayment-results" style="display: none;">
-                    <div class="result-item">
-                        <span class="result-label">New Tenure</span>
-                        <span class="result-value" id="new-tenure">0 months</span>
-                    </div>
-                    <div class="result-item">
-                        <span class="result-label">Interest Saved</span>
-                        <span class="result-value" id="interest-saved">₹0</span>
-                    </div>
-                    <div class="result-item">
-                        <span class="result-label">New Total Payment</span>
-                        <span class="result-value" id="new-total-payment">₹0</span>
-                    </div>
-                </div>
-            </section>
-
-            <!-- Loan Comparison Section -->
-            <section class="comparison-section card">
-                <h2>Loan Comparison</h2>
-                <div class="comparison-grid">
-                    <div class="comparison-inputs">
-                        <div class="loan-a">
-                            <h3>Loan A</h3>
-                            <div class="form-group">
-                                <label>Loan Amount</label>
-                                <input type="number" id="loan-a-amount" placeholder="Enter amount">
-                            </div>
-                            <div class="form-group">
-                                <label>Interest Rate (%)</label>
-                                <input type="number" id="loan-a-rate" step="0.1" placeholder="Enter rate">
-                            </div>
-                            <div class="form-group">
-                                <label>Tenure (Years)</label>
-                                <input type="number" id="loan-a-tenure" placeholder="Enter years">
-                            </div>
-                        </div>
-                        <div class="loan-b">
-                            <h3>Loan B</h3>
-                            <div class="form-group">
-                                <label>Loan Amount</label>
-                                <input type="number" id="loan-b-amount" placeholder="Enter amount">
-                            </div>
-                            <div class="form-group">
-                                <label>Interest Rate (%)</label>
-                                <input type="number" id="loan-b-rate" step="0.1" placeholder="Enter rate">
-                            </div>
-                            <div class="form-group">
-                                <label>Tenure (Years)</label>
-                                <input type="number" id="loan-b-tenure" placeholder="Enter years">
-                            </div>
-                        </div>
-                    </div>
-                    <button type="button" id="compare-btn" class="btn btn-primary">Compare Loans</button>
-                </div>
-                <div class="comparison-results" id="comparison-results" style="display: none;">
-                    <table class="comparison-table">
-                        <thead>
-                            <tr>
-                                <th>Parameter</th>
-                                <th>Loan A</th>
-                                <th>Loan B</th>
-                                <th>Difference</th>
-                            </tr>
-                        </thead>
-                        <tbody id="comparison-body">
-                        </tbody>
-                    </table>
-                </div>
-            </section>
-
-            <!-- Saved Loans Section -->
-            <section class="saved-section card">
-                <h2>Saved Loans</h2>
-                <div class="saved-loans-list" id="saved-loans-list">
-                    <p class="no-data">No saved loans yet</p>
-                </div>
-            </section>
-        </main>
-
-        <!-- Footer -->
-        <footer class="app-footer">
-            <p>&copy; 2026 Smart EMI Calculator. All rights reserved.</p>
-        </footer>
-    </div>
-
-    <!-- Save Loan Modal -->
-    <div id="save-modal" class="modal" style="display: none;">
-        <div class="modal-content">
-            <h3>Save Loan Details</h3>
-            <div class="form-group">
-                <label for="loan-name">Loan Name</label>
-                <input type="text" id="loan-name" placeholder="e.g., Home Loan, Car Loan">
-            </div>
-            <div class="modal-actions">
-                <button type="button" id="cancel-save" class="btn btn-secondary">Cancel</button>
-                <button type="button" id="confirm-save" class="btn btn-primary">Save</button>
+            
+            <div class="landing-actions">
+                <a href="login.html" class="btn btn-primary btn-large">Get Started</a>
             </div>
         </div>
     </div>
-
-    <script src="js/emi-calculation.js"></script>
-    <script src="js/schedule-generator.js"></script>
-    <script src="js/charts.js"></script>
-    <script src="js/storage.js"></script>
-    <script src="script.js"></script>
 </body>
 </html>

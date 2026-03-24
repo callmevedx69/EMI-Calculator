@@ -1,0 +1,408 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login - Smart EMI Calculator</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="css/auth.css">
+    <!-- Supabase Client -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="js/supabase-config.js"></script>
+</head>
+<body class="auth-page">
+    <div class="auth-container">
+        <div class="auth-card">
+            <div class="auth-header">
+                <h1>Smart EMI Calculator</h1>
+                <p>Manage your loans with ease</p>
+            </div>
+
+            <!-- Login Form -->
+            <form id="login-form" class="auth-form">
+                <h2>Login</h2>
+                <div class="form-group">
+                    <label for="email">Email</label>
+                    <input type="email" id="email" name="email" placeholder="Enter your email" required>
+                </div>
+                <div class="form-group">
+                    <label for="password">Password</label>
+                    <div class="password-input-wrapper">
+                        <input type="password" id="password" name="password" placeholder="Enter your password" required>
+                        <button type="button" class="password-toggle" onclick="togglePassword('password')" aria-label="Toggle password visibility">
+                            <svg id="password-eye" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                                <circle cx="12" cy="12" r="3"></circle>
+                            </svg>
+                        </button>
+                    </div>
+                </div>
+                <div id="login-error" class="error-message" style="display: none;"></div>
+                <button type="submit" class="btn btn-primary btn-block">Login</button>
+            </form>
+
+            <!-- Signup Form -->
+            <form id="signup-form" class="auth-form" style="display: none;">
+                <h2>Sign Up</h2>
+                <div class="form-group">
+                    <label for="signup-email">Email</label>
+                    <input type="email" id="signup-email" name="email" placeholder="Enter your email" required>
+                </div>
+                <div class="form-group">
+                    <label for="signup-password">Password</label>
+                    <div class="password-input-wrapper">
+                        <input type="password" id="signup-password" name="password" placeholder="Create a password" required>
+                        <button type="button" class="password-toggle" onclick="togglePassword('signup-password')" aria-label="Toggle password visibility">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                                <circle cx="12" cy="12" r="3"></circle>
+                            </svg>
+                        </button>
+                    </div>
+                    <!-- Password Strength Meter -->
+                    <div class="password-strength-container" id="password-strength-container" style="display: none;">
+                        <div class="password-strength-bar">
+                            <div class="password-strength-fill" id="password-strength-fill"></div>
+                        </div>
+                        <div class="password-strength-text" id="password-strength-text"></div>
+                        <div class="password-requirements">
+                            <div class="password-requirement" id="req-length">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <polyline points="20 6 9 17 4 12"></polyline>
+                                </svg>
+                                <span>8+ characters</span>
+                            </div>
+                            <div class="password-requirement" id="req-uppercase">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <polyline points="20 6 9 17 4 12"></polyline>
+                                </svg>
+                                <span>Uppercase</span>
+                            </div>
+                            <div class="password-requirement" id="req-lowercase">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <polyline points="20 6 9 17 4 12"></polyline>
+                                </svg>
+                                <span>Lowercase</span>
+                            </div>
+                            <div class="password-requirement" id="req-number">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <polyline points="20 6 9 17 4 12"></polyline>
+                                </svg>
+                                <span>Number</span>
+                            </div>
+                            <div class="password-requirement" id="req-special">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <polyline points="20 6 9 17 4 12"></polyline>
+                                </svg>
+                                <span>Special char</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="password-error" id="password-error">Please create a stronger password</div>
+                </div>
+                <div class="form-group">
+                    <label for="confirm-password">Confirm Password</label>
+                    <div class="password-input-wrapper">
+                        <input type="password" id="confirm-password" name="confirm-password" placeholder="Confirm your password" required>
+                        <button type="button" class="password-toggle" onclick="togglePassword('confirm-password')" aria-label="Toggle password visibility">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                                <circle cx="12" cy="12" r="3"></circle>
+                            </svg>
+                        </button>
+                    </div>
+                </div>
+                <div id="signup-error" class="error-message" style="display: none;"></div>
+                <div id="signup-success" class="success-message" style="display: none;"></div>
+                <button type="submit" class="btn btn-primary btn-block" id="signup-submit" disabled>Sign Up</button>
+            </form>
+
+            <!-- Toggle Login/Signup -->
+            <div class="auth-toggle">
+                <p>
+                    <span id="toggle-text">Don't have an account?</span>
+                    <button type="button" id="toggle-auth" class="link-btn">Sign Up</button>
+                </p>
+            </div>
+
+            </div>
+    </div>
+
+    <!-- Auth Script - wrapped in DOMContentLoaded to ensure Supabase is initialized -->
+    <script>
+        // Check if user is already logged in
+        document.addEventListener("DOMContentLoaded", async () => {
+            try {
+                const { data, error } = await window.supabaseClient.auth.getSession();
+                console.log("Session:", data);
+                if (data.session) {
+                    window.location.href = 'dashboard.html';
+                    return;
+                }
+            } catch (err) {
+                console.error("Session error:", err);
+            }
+        });
+
+        // Password toggle visibility function
+        function togglePassword(inputId) {
+            const input = document.getElementById(inputId);
+            const button = input.parentElement.querySelector('.password-toggle');
+            
+            if (input.type === 'password') {
+                input.type = 'text';
+                button.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">\n                    <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"></path>\n                    <line x1="1" y1="1" x2="23" y2="23"></line>\n                </svg>';
+            } else {
+                input.type = 'password';
+                button.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">\n                    <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>\n                    <circle cx="12" cy="12" r="3"></circle>\n                </svg>';
+            }
+        }
+
+        // Password strength validation
+        function validatePassword(password) {
+            return {
+                length: password.length >= 8,
+                uppercase: /[A-Z]/.test(password),
+                lowercase: /[a-z]/.test(password),
+                number: /[0-9]/.test(password),
+                special: /[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(password)
+            };
+        }
+
+        function getPasswordStrength(password) {
+            const validation = validatePassword(password);
+            const validCount = Object.values(validation).filter(Boolean).length;
+            
+            if (validCount <= 2) return 'weak';
+            if (validCount <= 4) return 'medium';
+            return 'strong';
+        }
+
+        function updatePasswordStrengthMeter(password) {
+            const container = document.getElementById('password-strength-container');
+            const fill = document.getElementById('password-strength-fill');
+            const text = document.getElementById('password-strength-text');
+            const error = document.getElementById('password-error');
+            const submitBtn = document.getElementById('signup-submit');
+            
+            if (password.length === 0) {
+                container.style.display = 'none';
+                error.style.display = 'none';
+                submitBtn.disabled = true;
+                return;
+            }
+            
+            container.style.display = 'block';
+            const validation = validatePassword(password);
+            const strength = getPasswordStrength(password);
+            
+            // Update validation indicators
+            document.getElementById('req-length').className = 'password-requirement ' + (validation.length ? 'valid' : 'invalid');
+            document.getElementById('req-uppercase').className = 'password-requirement ' + (validation.uppercase ? 'valid' : 'invalid');
+            document.getElementById('req-lowercase').className = 'password-requirement ' + (validation.lowercase ? 'valid' : 'invalid');
+            document.getElementById('req-number').className = 'password-requirement ' + (validation.number ? 'valid' : 'invalid');
+            document.getElementById('req-special').className = 'password-requirement ' + (validation.special ? 'valid' : 'invalid');
+            
+            // Update strength bar
+            fill.className = 'password-strength-fill ' + strength;
+            text.className = 'password-strength-text ' + strength;
+            text.textContent = strength + ' password';
+            
+            // Enable/disable submit based on password strength
+            const isStrong = strength === 'medium' || strength === 'strong';
+            submitBtn.disabled = !isStrong;
+            
+            if (!isStrong && password.length > 0) {
+                error.style.display = 'block';
+            } else {
+                error.style.display = 'none';
+            }
+        }
+
+        // Add password input listener for strength meter
+        const signupPasswordInput = document.getElementById('signup-password');
+        signupPasswordInput.addEventListener('input', (e) => {
+            updatePasswordStrengthMeter(e.target.value);
+        });
+
+        // Auth toggle functionality
+        const loginForm = document.getElementById('login-form');
+        const signupForm = document.getElementById('signup-form');
+        const toggleBtn = document.getElementById('toggle-auth');
+        const toggleText = document.getElementById('toggle-text');
+
+        let isLoginMode = true;
+
+        toggleBtn.addEventListener('click', () => {
+            isLoginMode = !isLoginMode;
+            if (isLoginMode) {
+                loginForm.style.display = 'block';
+                signupForm.style.display = 'none';
+                toggleText.textContent = "Don't have an account?";
+                toggleBtn.textContent = "Sign Up";
+            } else {
+                loginForm.style.display = 'none';
+                signupForm.style.display = 'block';
+                toggleText.textContent = "Already have an account?";
+                toggleBtn.textContent = "Login";
+            }
+        });
+
+        // Improved login error handling
+        function handleLoginError(error) {
+            const errorDiv = document.getElementById('login-error');
+            
+            // Show actual Supabase error message
+            if (error && error.message) {
+                errorDiv.textContent = error.message;
+            } else {
+                errorDiv.textContent = 'An unexpected error occurred. Please try again.';
+            }
+            
+            errorDiv.style.display = 'block';
+        }
+
+        // Login handler
+        loginForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const email = document.getElementById('email').value;
+            const password = document.getElementById('password').value;
+            const errorDiv = document.getElementById('login-error');
+            
+            errorDiv.style.display = 'none';
+            
+            try {
+                // Validate Supabase client is initialized
+                if (!window.supabaseClient) {
+                    console.error("Supabase client not initialized");
+                    errorDiv.textContent = "Authentication service unavailable. Please refresh the page.";
+                    errorDiv.style.display = 'block';
+                    return;
+                }
+                
+                console.log("Supabase Client:", window.supabaseClient);
+                
+                const { data, error } = await window.supabaseClient.auth.signInWithPassword({
+                    email: email,
+                    password: password
+                });
+                
+                if (error) {
+                    handleLoginError(error);
+                    return;
+                }
+                
+                // Redirect to dashboard on successful login
+                window.location.href = 'dashboard.html';
+            } catch (err) {
+                if (err && err.message) {
+                    errorDiv.textContent = err.message;
+                } else {
+                    errorDiv.textContent = 'An unexpected error occurred. Please try again.';
+                }
+                errorDiv.style.display = 'block';
+            }
+        });
+
+        // Signup handler
+        signupForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const email = document.getElementById('signup-email').value;
+            const password = document.getElementById('signup-password').value;
+            const confirmPassword = document.getElementById('confirm-password').value;
+            const errorDiv = document.getElementById('signup-error');
+            const successDiv = document.getElementById('signup-success');
+
+            errorDiv.style.display = 'none';
+            successDiv.style.display = 'none';
+            
+            // Check password strength before allowing signup
+            const strength = getPasswordStrength(password);
+            if (strength === 'weak') {
+                errorDiv.textContent = 'Please create a stronger password';
+                errorDiv.style.display = 'block';
+                return;
+            }
+            
+            if (password !== confirmPassword) {
+                errorDiv.textContent = 'Passwords do not match';
+                errorDiv.style.display = 'block';
+                return;
+            }
+            
+            try {
+                // Validate Supabase client is initialized
+                if (!window.supabaseClient) {
+                    console.error("Supabase client not initialized");
+                    errorDiv.textContent = "Authentication service unavailable. Please refresh the page.";
+                    errorDiv.style.display = 'block';
+                    return;
+                }
+                
+                console.log("Supabase Client:", window.supabaseClient);
+                
+                const { data, error } = await window.supabaseClient.auth.signUp({
+                    email: email,
+                    password: password
+                });
+                
+                if (error) {
+                    // Show actual Supabase error message
+                    if (error && error.message) {
+                        errorDiv.textContent = error.message;
+                    } else {
+                        errorDiv.textContent = 'An unexpected error occurred. Please try again.';
+                    }
+                    errorDiv.style.display = 'block';
+                    return;
+                }
+                
+                // Check if email confirmation is required
+                if (data.user && data.user.email_confirmed_at) {
+                    // User is confirmed, redirect to dashboard
+                    window.location.href = 'dashboard.html';
+                } else {
+                    // Show success message asking to check email
+                    successDiv.textContent = 'Account created! Please check your email to confirm your account.';
+                    successDiv.style.display = 'block';
+                }
+            } catch (err) {
+                if (err && err.message) {
+                    errorDiv.textContent = err.message;
+                } else {
+                    errorDiv.textContent = 'An unexpected error occurred. Please try again.';
+                }
+                errorDiv.style.display = 'block';
+            }
+        });
+
+        // Check if already logged in - redirect to dashboard if session exists
+        document.addEventListener("DOMContentLoaded", async () => {
+            // Debug: Log Supabase client initialization
+            console.log("Supabase Client:", window.supabaseClient);
+            
+            // Validate Supabase is initialized
+            if (!window.supabaseClient) {
+                console.error("Supabase client not initialized");
+                const errorDiv = document.getElementById('login-error');
+                if (errorDiv) {
+                    errorDiv.textContent = "Authentication service unavailable. Please refresh the page.";
+                    errorDiv.style.display = 'block';
+                }
+                return;
+            }
+            
+            try {
+                const { data, error } = await window.supabaseClient.auth.getSession();
+                console.log("Session:", data);
+                
+                if (data.session) {
+                    window.location.href = 'dashboard.html';
+                }
+            } catch (err) {
+                console.error("Session error:", err);
+            }
+        });
+    </script>
+</body>
+</html>
