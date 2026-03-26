@@ -11,26 +11,28 @@
 </head>
 <body>
     <!-- Navigation -->
-    <div id="main-nav"></div>
+    <div id="main-nav">
+        <nav class="navbar">
+            <div class="nav-brand">
+                <a href="dashboard.html">
+                    <span class="brand-icon">💰</span>
+                    <span class="brand-text">Smart EMI</span>
+                </a>
+            </div>
+            <div class="nav-links">
+                <a href="dashboard.html" class="nav-link">Dashboard</a>
+                <a href="calculator.html" class="nav-link">Calculator</a>
+                <a href="comparison.html" class="nav-link">Compare</a>
+                <a href="profile.html" class="nav-link active">Profile</a>
+            </div>
+            <div class="nav-auth">
+                <button id="themeToggle" class="theme-btn" aria-label="Toggle Dark Mode">🌙</button>
+                <button id="logoutBtn" class="btn btn-logout">Logout</button>
+            </div>
+        </nav>
+    </div>
 
     <div class="app-container">
-        <!-- Header -->
-        <header class="app-header">
-            <h1>My Profile</h1>
-            <div class="header-controls">
-                <div class="currency-selector">
-                    <label for="currency">Currency:</label>
-                    <select id="currency">
-                        <option value="INR" selected>₹ INR</option>
-                        <option value="USD">$ USD</option>
-                        <option value="EUR">€ EUR</option>
-                    </select>
-                </div>
-                <button id="theme-toggle" class="theme-btn" aria-label="Toggle Dark Mode">
-                    <span class="theme-icon">🌙</span>
-                </button>
-            </div>
-        </header>
 
         <!-- Main Content -->
         <main class="main-content">
@@ -97,6 +99,20 @@
                 </div>
             </section>
 
+            <!-- Edit Profile Section -->
+            <section class="card">
+                <h2>Edit Profile</h2>
+                <div class="form-group">
+                    <label for="userName">Name</label>
+                    <input type="text" id="userName" placeholder="Enter your name">
+                </div>
+                <div class="form-group">
+                    <label for="userPhoto">Photo URL</label>
+                    <input type="text" id="userPhoto" placeholder="Enter photo URL">
+                </div>
+                <button type="button" id="saveProfileBtn" class="btn btn-primary">Save Profile</button>
+            </section>
+
             <!-- Settings Section -->
             <section class="card">
                 <h2>Settings</h2>
@@ -149,8 +165,8 @@
 
     <!-- Scripts -->
     <script src="js/supabase-config.js"></script>
+    <script src="js/storage.js"></script>
     <script src="js/database.js"></script>
-    <script src="js/navigation.js"></script>
     <script src="js/emi-calculation.js"></script>
     
     <script>
@@ -158,30 +174,52 @@
         let loanToDelete = null;
 
         document.addEventListener('DOMContentLoaded', async () => {
+            // Always load profile from localStorage (works even without auth)
+            loadProfileOnPageLoad();
+            
             try {
                 // Check auth using Supabase directly
                 const { data, error } = await window.supabaseClient.auth.getSession();
                 console.log("Session:", data);
                 if (!data.session) {
-                    window.location.href = 'login.html';
-                    return;
+                    // Don't redirect - allow viewing profile without auth
+                    // window.location.href = 'login.html';
+                    // return;
                 }
 
-                NavigationManager.init();
+                loadPreferences();
                 loadUserProfile();
                 setupEventListeners();
             } catch (err) {
                 console.error('Profile page initialization error:', err);
-                NavigationManager.init();
+                loadPreferences();
                 loadUserProfile();
                 setupEventListeners();
             }
         });
 
         function setupEventListeners() {
-            document.getElementById('theme-toggle').addEventListener('click', toggleTheme);
-            document.getElementById('theme-settings-btn').addEventListener('click', toggleTheme);
+            document.getElementById('themeToggle').addEventListener('click', () => {
+                document.body.classList.toggle('dark-mode');
+                const isDark = document.body.classList.contains('dark-mode');
+                localStorage.setItem('theme', isDark ? 'dark' : 'light');
+                document.getElementById('themeToggle').textContent = isDark ? '☀️' : '🌙';
+                const settingsBtn = document.getElementById('theme-settings-btn');
+                if (settingsBtn) settingsBtn.querySelector('.theme-icon').textContent = isDark ? '☀️' : '🌙';
+            });
+            document.getElementById('theme-settings-btn').addEventListener('click', () => {
+                document.body.classList.toggle('dark-mode');
+                const isDark = document.body.classList.contains('dark-mode');
+                localStorage.setItem('theme', isDark ? 'dark' : 'light');
+                document.getElementById('themeToggle').textContent = isDark ? '☀️' : '🌙';
+                const settingsBtn = document.getElementById('theme-settings-btn');
+                if (settingsBtn) settingsBtn.querySelector('.theme-icon').textContent = isDark ? '☀️' : '🌙';
+            });
             document.getElementById('logout-btn').addEventListener('click', logout);
+            document.getElementById('logoutBtn').addEventListener('click', async () => {
+                await window.supabaseClient.auth.signOut();
+                window.location.href = 'login.html';
+            });
             
             document.getElementById('currency').addEventListener('change', (e) => {
                 localStorage.setItem('emi_currency', e.target.value);
@@ -202,29 +240,45 @@
         }
 
         async function loadUserProfile() {
-            const user = AuthManager.getCurrentUser();
-            if (!user) return;
+            try {
+                const { data } = await window.supabaseClient.auth.getSession();
+                const user = data.session?.user;
+                if (!user) {
+                    window.location.href = 'login.html';
+                    return;
+                }
 
-            // Update user info
-            document.getElementById('user-email').textContent = user.email;
-            document.getElementById('user-id').textContent = `ID: ${user.id.substring(0, 8)}...`;
-            document.getElementById('user-initial').textContent = user.email.charAt(0).toUpperCase();
-            
-            const created = new Date(user.created_at);
-            document.getElementById('member-since').textContent = `Member since: ${created.toLocaleDateString()}`;
+                // Update user info
+                document.getElementById('user-email').textContent = user.email;
+                document.getElementById('user-id').textContent = `ID: ${user.id.substring(0, 8)}...`;
+                document.getElementById('user-initial').textContent = user.email.charAt(0).toUpperCase();
+                
+                const created = new Date(user.created_at);
+                document.getElementById('member-since').textContent = `Member since: ${created.toLocaleDateString()}`;
 
-            // Load loans
-            const result = await DatabaseManager.getUserLoans();
-            if (result.success) {
-                loans = result.loans;
-                renderLoans();
-                updateStats();
+                // Load loans from localStorage
+                const localLoans = StorageManager.getSavedLoans();
+                if (localLoans && localLoans.length > 0) {
+                    loans = localLoans;
+                    renderLoans();
+                    updateStats();
+                } else {
+                    // Try from DatabaseManager as fallback
+                    const result = await DatabaseManager.getUserLoans();
+                    if (result.success) {
+                        loans = result.loans;
+                        renderLoans();
+                        updateStats();
+                    }
+                }
+
+                // Load preferences
+                const savedCurrency = localStorage.getItem('emi_currency') || 'INR';
+                document.getElementById('currency').value = savedCurrency;
+                document.getElementById('default-currency').value = savedCurrency;
+            } catch (err) {
+                console.error('Error loading profile:', err);
             }
-
-            // Load preferences
-            const savedCurrency = localStorage.getItem('emi_currency') || 'INR';
-            document.getElementById('currency').value = savedCurrency;
-            document.getElementById('default-currency').value = savedCurrency;
         }
 
         function renderLoans() {
@@ -238,12 +292,17 @@
 
             let html = '';
             loans.forEach(loan => {
+                // Handle both database format and localStorage format
+                const loanName = loan.loan_name || loan.name || 'Untitled Loan';
                 const loanCurrency = loan.currency || 'INR';
+                const rate = loan.interest_rate || loan.interestRate || 0;
+                const date = loan.created_at || loan.createdAt;
+                
                 html += `
                     <div class="loan-card">
                         <div class="loan-header">
-                            <h4>${escapeHtml(loan.loan_name)}</h4>
-                            <span class="loan-date">${new Date(loan.created_at).toLocaleDateString()}</span>
+                            <h4>${escapeHtml(loanName)}</h4>
+                            <span class="loan-date">${new Date(date).toLocaleDateString()}</span>
                         </div>
                         <div class="loan-details">
                             <div class="detail">
@@ -252,7 +311,7 @@
                             </div>
                             <div class="detail">
                                 <span class="label">Rate</span>
-                                <span class="value">${loan.interest_rate}%</span>
+                                <span class="value">${rate}%</span>
                             </div>
                             <div class="detail">
                                 <span class="label">Tenure</span>
@@ -291,23 +350,26 @@
             document.getElementById('total-interest-paid').textContent = EMICalculation.formatCurrency(totalInterest, currency);
         }
 
-        function toggleTheme() {
-            const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
-            if (isDark) {
-                document.documentElement.removeAttribute('data-theme');
-                document.querySelector('#theme-toggle .theme-icon').textContent = '🌙';
-                document.querySelector('#theme-settings-btn .theme-icon').textContent = '🌙';
-            } else {
-                document.documentElement.setAttribute('data-theme', 'dark');
-                document.querySelector('#theme-toggle .theme-icon').textContent = '☀️';
-                document.querySelector('#theme-settings-btn .theme-icon').textContent = '☀️';
+        // Theme toggle function removed - using inline handlers in setupEventListeners instead
+
+
+        function loadPreferences() {
+            const savedTheme = localStorage.getItem('theme') || localStorage.getItem('emi_theme');
+            if (savedTheme === 'dark') {
+                document.body.classList.add('dark-mode');
+                document.getElementById('themeToggle').textContent = '☀️';
+                const settingsBtn = document.getElementById('theme-settings-btn');
+                if (settingsBtn) settingsBtn.querySelector('.theme-icon').textContent = '☀️';
             }
-            localStorage.setItem('emi_theme', isDark ? 'light' : 'dark');
         }
 
         async function logout() {
             if (confirm('Are you sure you want to logout?')) {
-                await AuthManager.signOut();
+                try {
+                    await window.supabaseClient.auth.signOut();
+                } catch (err) {
+                    console.error('Logout error:', err);
+                }
                 window.location.href = 'login.html';
             }
         }
@@ -322,19 +384,18 @@
             document.getElementById('delete-modal').style.display = 'none';
         }
 
-        async function confirmDeleteLoan() {
+        function confirmDeleteLoan() {
             if (!loanToDelete) return;
 
-            const result = await DatabaseManager.deleteLoan(loanToDelete);
-            
-            if (result.success) {
+            // Delete from localStorage
+            if (StorageManager.deleteLoan(loanToDelete)) {
                 loans = loans.filter(l => l.id !== loanToDelete);
                 renderLoans();
                 updateStats();
                 hideDeleteModal();
                 alert('Loan deleted successfully!');
             } else {
-                alert('Error deleting loan: ' + result.error);
+                alert('Error deleting loan. Please try again.');
             }
         }
 
@@ -352,6 +413,34 @@
             div.textContent = text;
             return div.innerHTML;
         }
+        
+        function saveProfile() {
+            const name = document.getElementById("userName")?.value;
+            const photo = document.getElementById("userPhoto")?.value;
+
+            const profile = { name, photo };
+
+            localStorage.setItem("profile", JSON.stringify(profile));
+
+            alert("Profile updated!");
+        }
+        
+        function loadProfileOnPageLoad() {
+            const profile = JSON.parse(localStorage.getItem("profile"));
+
+            if (profile) {
+                const userNameEl = document.getElementById("userName");
+                if (userNameEl) {
+                    userNameEl.value = profile.name || "";
+                }
+            }
+        }
+        
+        // Load profile on page load
+        loadProfileOnPageLoad();
+        
+        // Add event listener for save profile button
+        document.getElementById("saveProfileBtn")?.addEventListener("click", saveProfile);
     </script>
 </body>
 </html>

@@ -9,6 +9,38 @@ const DatabaseManager = (function() {
     const LOCAL_STORAGE_KEY = 'local_loans';
 
     /**
+     * Get current user from Supabase
+     * @returns {object|null}
+     */
+    async function getCurrentUser() {
+        try {
+            const { data } = await window.supabaseClient.auth.getSession();
+            return data.session?.user || null;
+        } catch (err) {
+            console.log('No active session');
+            return null;
+        }
+    }
+
+    /**
+     * Check if user is admin
+     * @returns {boolean}
+     */
+    async function isAdmin() {
+        // For now, we'll check if user email contains 'admin'
+        // In production, you'd check user metadata or roles
+        try {
+            const { data } = await window.supabaseClient.auth.getSession();
+            if (data.session?.user?.email) {
+                return data.session.user.email.toLowerCase().includes('admin');
+            }
+            return false;
+        } catch (err) {
+            return false;
+        }
+    }
+
+    /**
      * Get loans from localStorage
      * @returns {array}
      */
@@ -48,7 +80,7 @@ const DatabaseManager = (function() {
      * @returns {object} - Result with success/error
      */
     async function saveLoan(loanData) {
-        const user = AuthManager.getCurrentUser();
+        const user = await getCurrentUser();
         if (!user) {
             return { success: false, error: 'User not logged in' };
         }
@@ -69,7 +101,7 @@ const DatabaseManager = (function() {
 
         // Try Supabase first
         try {
-            const { data, error } = await supabase
+            const { data, error } = await window.supabaseClient
                 .from(LOANS_TABLE)
                 .insert(newLoan)
                 .select();
@@ -94,14 +126,14 @@ const DatabaseManager = (function() {
      * @returns {object} - Result with loans array
      */
     async function getUserLoans() {
-        const user = AuthManager.getCurrentUser();
+        const user = await getCurrentUser();
         if (!user) {
             return { success: false, error: 'User not logged in', loans: [] };
         }
 
         // Try Supabase first
         try {
-            const { data, error } = await supabase
+            const { data, error } = await window.supabaseClient
                 .from(LOANS_TABLE)
                 .select('*')
                 .eq('user_id', user.id)
@@ -131,7 +163,7 @@ const DatabaseManager = (function() {
     async function getLoanById(loanId) {
         // Try Supabase first
         try {
-            const { data, error } = await supabase
+            const { data, error } = await window.supabaseClient
                 .from(LOANS_TABLE)
                 .select('*')
                 .eq('id', loanId)
@@ -169,7 +201,7 @@ const DatabaseManager = (function() {
 
         // Try Supabase first
         try {
-            const { data, error } = await supabase
+            const { data, error } = await window.supabaseClient
                 .from(LOANS_TABLE)
                 .update(updateData)
                 .eq('id', loanId)
@@ -202,7 +234,7 @@ const DatabaseManager = (function() {
     async function deleteLoan(loanId) {
         // Try Supabase first
         try {
-            const { error } = await supabase
+            const { error } = await window.supabaseClient
                 .from(LOANS_TABLE)
                 .delete()
                 .eq('id', loanId);
@@ -227,7 +259,7 @@ const DatabaseManager = (function() {
      * @returns {object} - Statistics object
      */
     async function getDashboardStats() {
-        const user = AuthManager.getCurrentUser();
+        const user = await getCurrentUser();
         if (!user) {
             return { 
                 success: false, 
@@ -238,7 +270,7 @@ const DatabaseManager = (function() {
 
         // Try Supabase first
         try {
-            const { data, error } = await supabase
+            const { data, error } = await window.supabaseClient
                 .from(LOANS_TABLE)
                 .select('amount, emi')
                 .eq('user_id', user.id);
@@ -287,11 +319,12 @@ const DatabaseManager = (function() {
      */
     async function getAllLoans() {
         try {
-            if (!AuthManager.isAdmin()) {
+            const admin = await isAdmin();
+            if (!admin) {
                 return { success: false, error: 'Admin access required', loans: [] };
             }
 
-            const { data, error } = await supabase
+            const { data, error } = await window.supabaseClient
                 .from(LOANS_TABLE)
                 .select('*')
                 .order('created_at', { ascending: false });
@@ -314,7 +347,8 @@ const DatabaseManager = (function() {
      */
     async function getAllUsers() {
         try {
-            if (!AuthManager.isAdmin()) {
+            const admin = await isAdmin();
+            if (!admin) {
                 return { success: false, error: 'Admin access required', users: [] };
             }
 
@@ -339,11 +373,12 @@ const DatabaseManager = (function() {
      */
     async function adminDeleteLoan(loanId) {
         try {
-            if (!AuthManager.isAdmin()) {
+            const admin = await isAdmin();
+            if (!admin) {
                 return { success: false, error: 'Admin access required' };
             }
 
-            const { error } = await supabase
+            const { error } = await window.supabaseClient
                 .from(LOANS_TABLE)
                 .delete()
                 .eq('id', loanId);

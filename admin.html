@@ -9,10 +9,30 @@
     <!-- Supabase Client -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="js/supabase-config.js"></script>
+    <script src="js/theme.js"></script>
 </head>
 <body>
     <!-- Navigation -->
-    <div id="main-nav"></div>
+    <div id="main-nav">
+        <nav class="navbar">
+            <div class="nav-brand">
+                <a href="dashboard.html">
+                    <span class="brand-icon">💰</span>
+                    <span class="brand-text">Smart EMI</span>
+                </a>
+            </div>
+            <div class="nav-links">
+                <a href="dashboard.html" class="nav-link">Dashboard</a>
+                <a href="calculator.html" class="nav-link">Calculator</a>
+                <a href="comparison.html" class="nav-link">Compare</a>
+                <a href="profile.html" class="nav-link">Profile</a>
+                <a href="admin.html" class="nav-link active">Admin</a>
+            </div>
+            <div class="nav-auth">
+                <a href="login.html" class="btn btn-logout">Logout</a>
+            </div>
+        </nav>
+    </div>
 
     <div class="app-container">
         <!-- Header -->
@@ -20,6 +40,7 @@
             <h1>🔧 Admin Panel</h1>
             <div class="header-controls">
                 <span class="admin-badge">Admin Access</span>
+                <button id="themeToggle" class="theme-btn" aria-label="Toggle Dark Mode">🌙</button>
             </div>
         </header>
 
@@ -128,7 +149,6 @@
     <!-- Scripts -->
     <script src="js/supabase-config.js"></script>
     <script src="js/database.js"></script>
-    <script src="js/navigation.js"></script>
     <script src="js/emi-calculation.js"></script>
     
     <script>
@@ -148,14 +168,14 @@
                     return;
                 }
 
-                // Check admin access
-                if (!AuthManager.isAdmin()) {
+                // Check admin access (email contains 'admin')
+                const userEmail = data.session.user?.email || '';
+                if (!userEmail.toLowerCase().includes('admin')) {
                     alert('Access denied. Admin privileges required.');
                     window.location.href = 'dashboard.html';
                     return;
                 }
 
-                NavigationManager.init();
                 loadAdminData();
                 setupEventListeners();
             } catch (err) {

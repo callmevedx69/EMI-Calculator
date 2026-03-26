@@ -4,7 +4,7 @@
  */
 
 const StorageManager = (function() {
-    const SAVED_LOANS_KEY = 'emi_saved_loans';
+    const SAVED_LOANS_KEY = 'loans';
     const THEME_KEY = 'emi_theme';
     const CURRENCY_KEY = 'emi_currency';
 

@@ -13,26 +13,28 @@
 </head>
 <body>
     <!-- Navigation -->
-    <div id="main-nav"></div>
+    <div id="main-nav">
+        <nav class="navbar">
+            <div class="nav-brand">
+                <a href="dashboard.html">
+                    <span class="brand-icon">💰</span>
+                    <span class="brand-text">Smart EMI</span>
+                </a>
+            </div>
+            <div class="nav-links">
+                <a href="dashboard.html" class="nav-link">Dashboard</a>
+                <a href="calculator.html" class="nav-link">Calculator</a>
+                <a href="comparison.html" class="nav-link active">Compare</a>
+                <a href="profile.html" class="nav-link">Profile</a>
+            </div>
+            <div class="nav-auth">
+                <button id="themeToggle" class="theme-btn" aria-label="Toggle Dark Mode">🌙</button>
+                <button id="logoutBtn" class="btn btn-logout">Logout</button>
+            </div>
+        </nav>
+    </div>
 
     <div class="app-container">
-        <!-- Header -->
-        <header class="app-header">
-            <h1>Loan Comparison</h1>
-            <div class="header-controls">
-                <div class="currency-selector">
-                    <label for="currency">Currency:</label>
-                    <select id="currency">
-                        <option value="INR" selected>₹ INR</option>
-                        <option value="USD">$ USD</option>
-                        <option value="EUR">€ EUR</option>
-                    </select>
-                </div>
-                <button id="theme-toggle" class="theme-btn" aria-label="Toggle Dark Mode">
-                    <span class="theme-icon">🌙</span>
-                </button>
-            </div>
-        </header>
 
         <!-- Main Content -->
         <main class="main-content">
@@ -40,6 +42,17 @@
             <section class="card">
                 <h2>Compare Multiple Loans</h2>
                 <p class="section-desc">Enter details for up to 3 loans to compare them side by side</p>
+                
+                <div class="calculator-header">
+                    <div class="currency-selector">
+                        <label for="currency">Currency:</label>
+                        <select id="currency">
+                            <option value="INR" selected>₹ INR</option>
+                            <option value="USD">$ USD</option>
+                            <option value="EUR">€ EUR</option>
+                        </select>
+                    </div>
+                </div>
                 
                 <div class="compare-inputs-grid">
                     <!-- Loan 1 -->
@@ -169,7 +182,6 @@
     <!-- Scripts -->
     <script src="js/supabase-config.js"></script>
     <script src="js/database.js"></script>
-    <script src="js/navigation.js"></script>
     <script src="js/emi-calculation.js"></script>
     
     <script>
@@ -178,6 +190,7 @@
         let comparedLoans = [];
 
         document.addEventListener('DOMContentLoaded', async () => {
+            loadPreferences();
             try {
                 // Check auth using Supabase directly
                 const { data, error } = await window.supabaseClient.auth.getSession();
@@ -187,11 +200,9 @@
                     return;
                 }
 
-                NavigationManager.init();
                 setupEventListeners();
             } catch (err) {
                 console.error('Comparison page initialization error:', err);
-                NavigationManager.init();
                 setupEventListeners();
             }
         });
@@ -206,15 +217,24 @@
                 }
             });
 
-            document.getElementById('theme-toggle').addEventListener('click', toggleTheme);
+            document.getElementById('themeToggle').addEventListener('click', () => {
+                document.body.classList.toggle('dark-mode');
+                const isDark = document.body.classList.contains('dark-mode');
+                localStorage.setItem('theme', isDark ? 'dark' : 'light');
+                document.getElementById('themeToggle').textContent = isDark ? '☀️' : '🌙';
+            });
+
+            document.getElementById('logoutBtn').addEventListener('click', async () => {
+                await window.supabaseClient.auth.signOut();
+                window.location.href = 'login.html';
+            });
         }
 
-        function toggleTheme() {
-            const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
-            if (isDark) {
-                document.documentElement.removeAttribute('data-theme');
-            } else {
-                document.documentElement.setAttribute('data-theme', 'dark');
+        function loadPreferences() {
+            const savedTheme = localStorage.getItem('theme');
+            if (savedTheme === 'dark') {
+                document.body.classList.add('dark-mode');
+                document.getElementById('themeToggle').textContent = '☀️';
             }
         }
 

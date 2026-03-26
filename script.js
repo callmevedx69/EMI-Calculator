@@ -4,88 +4,109 @@
  */
 
 // Application State
-const AppState = {
+let AppState = {
     currentEMI: null,
     currentSchedule: [],
     currency: 'INR',
     isDarkMode: false
 };
 
-// DOM Elements
-const elements = {
-    // Form inputs
-    loanAmount: document.getElementById('loan-amount'),
-    interestRate: document.getElementById('interest-rate'),
-    interestSlider: document.getElementById('interest-slider'),
-    interestValue: document.getElementById('interest-value'),
-    loanTenure: document.getElementById('loan-tenure'),
-    tenureSlider: document.getElementById('tenure-slider'),
-    tenureValue: document.getElementById('tenure-value'),
-    
-    // Summary display
-    monthlyEMI: document.getElementById('monthly-emi'),
-    totalInterest: document.getElementById('total-interest'),
-    totalPayment: document.getElementById('total-payment'),
-    loanPeriod: document.getElementById('loan-period'),
-    
-    // Schedule table
-    scheduleBody: document.getElementById('schedule-body'),
-    
-    // Controls
-    currencySelect: document.getElementById('currency'),
-    themeToggle: document.getElementById('theme-toggle'),
-    resetBtn: document.getElementById('reset-btn'),
-    saveLoanBtn: document.getElementById('save-loan-btn'),
-    downloadPdfBtn: document.getElementById('download-pdf-btn'),
-    
-    // Prepayment
-    prepaymentAmount: document.getElementById('prepayment-amount'),
-    calculatePrepaymentBtn: document.getElementById('calculate-prepayment-btn'),
-    prepaymentResults: document.getElementById('prepayment-results'),
-    newTenure: document.getElementById('new-tenure'),
-    interestSaved: document.getElementById('interest-saved'),
-    newTotalPayment: document.getElementById('new-total-payment'),
-    
-    // Comparison
-    compareBtn: document.getElementById('compare-btn'),
-    comparisonResults: document.getElementById('comparison-results'),
-    comparisonBody: document.getElementById('comparison-body'),
-    
-    // Saved loans
-    savedLoansList: document.getElementById('saved-loans-list'),
-    
-    // Modal
-    saveModal: document.getElementById('save-modal'),
-    loanName: document.getElementById('loan-name'),
-    cancelSave: document.getElementById('cancel-save'),
-    confirmSave: document.getElementById('confirm-save')
-};
+// DOM Elements (initialized in init)
+let elements = {};
 
 /**
  * Initialize the application
  */
 function init() {
-    loadPreferences();
-    setupEventListeners();
-    renderSavedLoans();
-    calculateEMI();
+    try {
+        // DOM Elements - moved inside init() to ensure DOM is loaded
+        elements = {
+            // Form inputs
+            loanAmount: document.getElementById('loanAmount'),
+            interestRate: document.getElementById('interestRate'),
+            interestSlider: document.getElementById('interest-slider'),
+            interestValue: document.getElementById('interest-value'),
+            loanTenure: document.getElementById('loanTenure'),
+            tenureSlider: document.getElementById('tenure-slider'),
+            tenureValue: document.getElementById('tenure-value'),
+            
+            // Summary display
+            monthlyEMI: document.getElementById('emiResult'),
+            totalInterest: document.getElementById('total-interest'),
+            totalPayment: document.getElementById('total-payment'),
+            loanPeriod: document.getElementById('loan-period'),
+            
+            // Schedule table
+            scheduleBody: document.getElementById('schedule-body'),
+            
+            // Controls
+            currencySelect: document.getElementById('currency'),
+            themeToggle: document.getElementById('themeToggle'),
+            resetBtn: document.getElementById('reset-btn'),
+            saveLoanBtn: document.getElementById('saveLoanBtn'),
+            downloadPdfBtn: document.getElementById('download-pdf-btn'),
+            
+            // Prepayment
+            prepaymentAmount: document.getElementById('prepayment-amount'),
+            calculatePrepaymentBtn: document.getElementById('calculate-prepayment-btn'),
+            prepaymentResults: document.getElementById('prepayment-results'),
+            newTenure: document.getElementById('new-tenure'),
+            interestSaved: document.getElementById('interest-saved'),
+            newTotalPayment: document.getElementById('new-total-payment'),
+            
+            // Comparison
+            compareBtn: document.getElementById('compareBtn'),
+            comparisonResults: document.getElementById('comparisonResult'),
+            comparisonBody: document.getElementById('comparison-body'),
+            
+            // Saved loans
+            savedLoansList: document.getElementById('saved-loans-list'),
+            
+            // Modal
+            saveModal: document.getElementById('save-modal'),
+            loanName: document.getElementById('loan-name'),
+            cancelSave: document.getElementById('cancel-save'),
+            confirmSave: document.getElementById('confirm-save')
+        };
+        
+        loadPreferences();
+        setupEventListeners();
+        renderSavedLoans();
+        calculateEMI();
+    } catch (err) {
+        console.error('Error initializing application:', err);
+    }
 }
+
+// Wrap all code inside DOMContentLoaded
+document.addEventListener('DOMContentLoaded', () => {
+    init();
+});
 
 /**
  * Load user preferences from localStorage
  */
 function loadPreferences() {
-    // Load currency preference
-    const savedCurrency = StorageManager.getCurrency();
-    elements.currencySelect.value = savedCurrency;
-    AppState.currency = savedCurrency;
-    
-    // Load theme preference
-    const savedTheme = StorageManager.getTheme();
-    if (savedTheme === 'dark') {
-        AppState.isDarkMode = true;
-        document.documentElement.setAttribute('data-theme', 'dark');
-        elements.themeToggle.querySelector('.theme-icon').textContent = '🌙';
+    try {
+        // Load currency preference
+        const savedCurrency = StorageManager.getCurrency();
+        if (elements.currencySelect) {
+            elements.currencySelect.value = savedCurrency;
+        }
+        AppState.currency = savedCurrency;
+        
+        // Load theme preference
+        const savedTheme = StorageManager.getTheme();
+        if (savedTheme === 'dark') {
+            AppState.isDarkMode = true;
+            document.body.classList.add('dark-mode');
+            document.documentElement.setAttribute('data-theme', 'dark');
+            if (elements.themeToggle) {
+                elements.themeToggle.textContent = '☀️';
+            }
+        }
+    } catch (err) {
+        console.error('Error loading preferences:', err);
     }
 }
 
@@ -93,44 +114,81 @@ function loadPreferences() {
  * Setup all event listeners
  */
 function setupEventListeners() {
-    // Input change events
-    elements.loanAmount.addEventListener('input', debounce(calculateEMI, 300));
-    elements.interestRate.addEventListener('input', debounce(calculateEMI, 300));
-    elements.loanTenure.addEventListener('input', debounce(calculateEMI, 300));
-    
-    // Slider events
-    elements.interestSlider.addEventListener('input', handleInterestSlider);
-    elements.tenureSlider.addEventListener('input', handleTenureSlider);
-    
-    // Currency change
-    elements.currencySelect.addEventListener('change', handleCurrencyChange);
-    
-    // Theme toggle
-    elements.themeToggle.addEventListener('click', toggleTheme);
-    
-    // Reset button
-    elements.resetBtn.addEventListener('click', resetCalculator);
-    
-    // Save loan
-    elements.saveLoanBtn.addEventListener('click', showSaveModal);
-    elements.cancelSave.addEventListener('click', hideSaveModal);
-    elements.confirmSave.addEventListener('click', saveLoan);
-    
-    // Download PDF
-    elements.downloadPdfBtn.addEventListener('click', generatePDF);
-    
-    // Prepayment calculation
-    elements.calculatePrepaymentBtn.addEventListener('click', calculatePrepayment);
-    
-    // Loan comparison
-    elements.compareBtn.addEventListener('click', compareLoans);
-    
-    // Close modal on outside click
-    elements.saveModal.addEventListener('click', function(e) {
-        if (e.target === elements.saveModal) {
-            hideSaveModal();
+    try {
+        // Logout button
+        const logoutBtn = document.getElementById('logoutBtn');
+        if (logoutBtn) {
+            logoutBtn.addEventListener('click', async () => {
+                await window.supabaseClient.auth.signOut();
+                window.location.href = 'login.html';
+            });
         }
-    });
+
+        // Input change events
+        if (elements.loanAmount) {
+            elements.loanAmount.addEventListener('input', debounce(calculateEMI, 300));
+        }
+        if (elements.interestRate) {
+            elements.interestRate.addEventListener('input', debounce(calculateEMI, 300));
+        }
+        if (elements.loanTenure) {
+            elements.loanTenure.addEventListener('input', debounce(calculateEMI, 300));
+        }
+        
+        // Slider events
+        if (elements.interestSlider) {
+            elements.interestSlider.addEventListener('input', handleInterestSlider);
+        }
+        if (elements.tenureSlider) {
+            elements.tenureSlider.addEventListener('input', handleTenureSlider);
+        }
+        
+        // Currency change
+        if (elements.currencySelect) {
+            elements.currencySelect.addEventListener('change', handleCurrencyChange);
+        }
+        
+        // Theme toggle
+        if (elements.themeToggle) {
+            elements.themeToggle.addEventListener('click', toggleTheme);
+        }
+        
+        // Reset button
+        if (elements.resetBtn) {
+            elements.resetBtn.addEventListener('click', resetCalculator);
+        }
+        
+        // Save loan
+        if (elements.saveLoanBtn) {
+            elements.saveLoanBtn.addEventListener('click', saveLoan);
+        }
+        
+        // Download PDF
+        if (elements.downloadPdfBtn) {
+            elements.downloadPdfBtn.addEventListener('click', generatePDF);
+        }
+        
+        // Prepayment calculation
+        if (elements.calculatePrepaymentBtn) {
+            elements.calculatePrepaymentBtn.addEventListener('click', calculatePrepayment);
+        }
+        
+        // Loan comparison
+        if (elements.compareBtn) {
+            elements.compareBtn.addEventListener('click', compareLoans);
+        }
+        
+        // Close modal on outside click
+        if (elements.saveModal) {
+            elements.saveModal.addEventListener('click', function(e) {
+                if (e.target === elements.saveModal) {
+                    hideSaveModal();
+                }
+            });
+        }
+    } catch (err) {
+        console.error('Error setting up event listeners:', err);
+    }
 }
 
 /**
@@ -170,11 +228,13 @@ function toggleTheme() {
     AppState.isDarkMode = !AppState.isDarkMode;
     
     if (AppState.isDarkMode) {
+        document.body.classList.add('dark-mode');
         document.documentElement.setAttribute('data-theme', 'dark');
-        elements.themeToggle.querySelector('.theme-icon').textContent = '🌙';
+        elements.themeToggle.textContent = '☀️';
     } else {
+        document.body.classList.remove('dark-mode');
         document.documentElement.removeAttribute('data-theme');
-        elements.themeToggle.querySelector('.theme-icon').textContent = '🌙';
+        elements.themeToggle.textContent = '🌙';
     }
     
     StorageManager.saveTheme(AppState.isDarkMode ? 'dark' : 'light');
@@ -318,26 +378,51 @@ function hideSaveModal() {
  * Save loan to localStorage
  */
 function saveLoan() {
-    const name = elements.loanName.value.trim() || 'Untitled Loan';
+    const amount = document.getElementById("loanAmount")?.value;
+    const rate = document.getElementById("interestRate")?.value;
+    const tenure = document.getElementById("loanTenure")?.value;
+    const currency = document.getElementById("currency")?.value || 'INR';
     
-    const loanData = {
-        name: name,
-        amount: elements.loanAmount.value,
-        interestRate: elements.interestRate.value,
-        tenure: elements.loanTenure.value,
-        emi: AppState.currentEMI.emi,
-        totalInterest: AppState.currentEMI.totalInterest,
-        totalPayment: AppState.currentEMI.totalPayment,
-        currency: AppState.currency
-    };
+    // Use default name since modal was removed
+    const loanName = 'Untitled Loan';
     
-    if (StorageManager.saveLoan(loanData)) {
-        hideSaveModal();
-        renderSavedLoans();
-        alert('Loan saved successfully!');
-    } else {
-        alert('Error saving loan. Please try again.');
+    // Calculate total interest and payment for accurate storage
+    const principal = parseFloat(amount);
+    const annualRate = parseFloat(rate);
+    const years = parseFloat(tenure);
+    
+    let totalInterest = 0;
+    let totalPayment = 0;
+    let emiValue = 0;
+    
+    if (principal && annualRate && years) {
+        const emiData = EMICalculation.calculateEMI(principal, annualRate, years);
+        if (emiData) {
+            totalInterest = emiData.totalInterest;
+            totalPayment = emiData.totalPayment;
+            emiValue = emiData.emi;
+        }
     }
+    
+    const loan = {
+        id: Date.now().toString(),
+        name: loanName,
+        amount: amount,
+        interestRate: rate,
+        tenure: tenure,
+        emi: emiValue,
+        totalInterest: totalInterest,
+        totalPayment: totalPayment,
+        currency: currency,
+        createdAt: new Date().toISOString()
+    };
+
+    let loans = JSON.parse(localStorage.getItem("loans")) || [];
+    loans.push(loan);
+    localStorage.setItem("loans", JSON.stringify(loans));
+    
+    renderSavedLoans();
+    alert("Loan saved successfully!");
 }
 
 /**

@@ -10,6 +10,11 @@
     padding: 1rem;
 }
 
+/* Dark mode auth page */
+body.dark-mode.auth-page {
+    background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
+}
+
 .auth-container {
     width: 100%;
     max-width: 450px;

@@ -14,29 +14,28 @@
 </head>
 <body>
     <!-- Navigation -->
-    <div id="main-nav"></div>
+    <div id="main-nav">
+        <nav class="navbar">
+            <div class="nav-brand">
+                <a href="dashboard.html">
+                    <span class="brand-icon">💰</span>
+                    <span class="brand-text">Smart EMI</span>
+                </a>
+            </div>
+            <div class="nav-links">
+                <a href="dashboard.html" class="nav-link active">Dashboard</a>
+                <a href="calculator.html" class="nav-link">Calculator</a>
+                <a href="comparison.html" class="nav-link">Compare</a>
+                <a href="profile.html" class="nav-link">Profile</a>
+            </div>
+            <div class="nav-auth">
+                <button id="themeToggle" class="theme-btn" aria-label="Toggle Dark Mode">🌙</button>
+                <button id="logoutBtn" class="btn btn-logout">Logout</button>
+            </div>
+        </nav>
+    </div>
 
     <div class="app-container">
-        <!-- Header -->
-        <header class="page-header">
-            <div class="header-content">
-                <h1>Dashboard</h1>
-                <p id="welcome-message">Welcome back!</p>
-            </div>
-            <div class="header-controls">
-                <div class="currency-selector">
-                    <label for="currency">Currency:</label>
-                    <select id="currency">
-                        <option value="INR" selected>₹ INR</option>
-                        <option value="USD">$ USD</option>
-                        <option value="EUR">€ EUR</option>
-                    </select>
-                </div>
-                <button id="theme-toggle" class="theme-btn" aria-label="Toggle Dark Mode">
-                    <span class="theme-icon">🌙</span>
-                </button>
-            </div>
-        </header>
 
         <!-- Main Content -->
         <main class="main-content">
@@ -204,7 +203,7 @@
     <!-- Scripts -->
     <script src="js/supabase-config.js"></script>
     <script src="js/database.js"></script>
-    <script src="js/navigation.js"></script>
+    <script src="js/storage.js"></script>
     <script src="js/emi-calculation.js"></script>
     <script src="js/charts.js"></script>
     
@@ -218,6 +217,14 @@
 
         // Initialize
         document.addEventListener('DOMContentLoaded', async () => {
+            // Load theme first
+            const savedTheme = localStorage.getItem('theme');
+            if (savedTheme === 'dark') {
+                document.body.classList.add('dark-mode');
+                const themeToggle = document.getElementById('themeToggle');
+                if (themeToggle) themeToggle.textContent = '☀️';
+            }
+            
             try {
                 // Check auth using Supabase directly
                 const { data, error } = await window.supabaseClient.auth.getSession();
@@ -227,9 +234,6 @@
                     return;
                 }
 
-                // Initialize navigation
-                NavigationManager.init();
-
                 // Setup event listeners
                 setupEventListeners();
 
@@ -238,71 +242,127 @@
             } catch (err) {
                 console.error('Dashboard initialization error:', err);
                 // Still render the page even if there's an error
-                NavigationManager.init();
+                loadPreferences();
                 setupEventListeners();
                 loadDashboardData();
             }
         });
 
         function setupEventListeners() {
-            // Currency
-            document.getElementById('currency').addEventListener('change', (e) => {
-                AppState.currency = e.target.value;
-                loadDashboardData();
-            });
+            try {
+                // Logout button
+                const logoutBtn = document.getElementById('logoutBtn');
+                if (logoutBtn) {
+                    logoutBtn.addEventListener('click', async () => {
+                        await window.supabaseClient.auth.signOut();
+                        window.location.href = 'login.html';
+                    });
+                }
 
-            // Theme toggle
-            document.getElementById('theme-toggle').addEventListener('click', toggleTheme);
+                // Currency (only on calculator page)
+                const currencySelect = document.getElementById('currency');
+                if (currencySelect) {
+                    currencySelect.addEventListener('change', (e) => {
+                        AppState.currency = e.target.value;
+                        loadDashboardData();
+                    });
+                }
 
-            // Affordability calculation
-            document.getElementById('calculate-affordability').addEventListener('click', calculateAffordability);
+                // Theme toggle
+                const themeToggle = document.getElementById('themeToggle');
+                if (themeToggle) {
+                    themeToggle.addEventListener('click', () => {
+                        document.body.classList.toggle('dark-mode');
+                        const isDark = document.body.classList.contains('dark-mode');
+                        localStorage.setItem('theme', isDark ? 'dark' : 'light');
+                        const toggle = document.getElementById('themeToggle');
+                        if (toggle) toggle.textContent = isDark ? '☀️' : '🌙';
+                    });
+                }
 
-            // Quick calculator
-            document.getElementById('quick-calculate').addEventListener('click', calculateQuickEMI);
-            document.getElementById('quick-save').addEventListener('click', saveQuickLoan);
+                // Affordability calculation
+                const calcAffordBtn = document.getElementById('calculate-affordability');
+                if (calcAffordBtn) {
+                    calcAffordBtn.addEventListener('click', calculateAffordability);
+                }
+
+                // Quick calculator
+                const quickCalcBtn = document.getElementById('quick-calculate');
+                if (quickCalcBtn) {
+                    quickCalcBtn.addEventListener('click', calculateQuickEMI);
+                }
+                const quickSaveBtn = document.getElementById('quick-save');
+                if (quickSaveBtn) {
+                    quickSaveBtn.addEventListener('click', saveQuickLoan);
+                }
+            } catch (err) {
+                console.error('Error setting up event listeners:', err);
+            }
         }
 
-        function toggleTheme() {
-            AppState.isDarkMode = !AppState.isDarkMode;
-            if (AppState.isDarkMode) {
-                document.documentElement.setAttribute('data-theme', 'dark');
-            } else {
-                document.documentElement.removeAttribute('data-theme');
+                function loadPreferences() {
+            try {
+                const savedTheme = localStorage.getItem('theme');
+                if (savedTheme === 'dark') {
+                    document.body.classList.add('dark-mode');
+                    const themeToggle = document.getElementById('themeToggle');
+                    if (themeToggle) themeToggle.textContent = '☀️';
+                }
+            } catch (err) {
+                console.error('Error loading preferences:', err);
             }
         }
 
         // Load dashboard data
         async function loadDashboardData() {
-            const user = AuthManager.getCurrentUser();
-            if (!user) return;
-
-            // Update welcome message
-            document.getElementById('welcome-message').textContent = `Welcome, ${user.email}!`;
-
-            // Load stats
-            const statsResult = await DatabaseManager.getDashboardStats();
-            if (statsResult.success) {
-                updateStats(statsResult.stats);
-            }
-
-            // Load recent loans
-            const loansResult = await DatabaseManager.getUserLoans();
-            if (loansResult.success) {
-                renderRecentLoans(loansResult.loans);
-                if (loansResult.loans.length > 0) {
-                    generateSmartInsights(loansResult.loans[0]);
+            try {
+                const { data } = await window.supabaseClient.auth.getSession();
+                const user = data.session?.user;
+                if (!user) {
+                    window.location.href = 'login.html';
+                    return;
                 }
+
+                // Load stats
+                const statsResult = await DatabaseManager.getDashboardStats();
+                if (statsResult.success) {
+                    updateStats(statsResult.stats);
+                }
+
+                // Load recent loans
+                const localLoans = StorageManager.getSavedLoans();
+                if (localLoans && localLoans.length > 0) {
+                    renderRecentLoans(localLoans);
+                    generateSmartInsights(localLoans[0]);
+                } else {
+                    // Try from DatabaseManager as fallback
+                    const loansResult = await DatabaseManager.getUserLoans();
+                    if (loansResult.success) {
+                        renderRecentLoans(loansResult.loans);
+                        if (loansResult.loans.length > 0) {
+                            generateSmartInsights(loansResult.loans[0]);
+                        }
+                    }
+                }
+            } catch (err) {
+                console.error('Error loading dashboard:', err);
             }
         }
 
         function updateStats(stats) {
-            document.getElementById('total-loans').textContent = stats.totalLoans;
-            document.getElementById('total-amount').textContent = EMICalculation.formatCurrency(stats.totalAmount, AppState.currency);
-            document.getElementById('total-emi').textContent = EMICalculation.formatCurrency(stats.totalEMI, AppState.currency);
+            const totalLoans = document.getElementById('total-loans');
+            const totalAmount = document.getElementById('total-amount');
+            const totalEmi = document.getElementById('total-emi');
+            
+            if (totalLoans) totalLoans.textContent = stats.totalLoans;
+            if (totalAmount) totalAmount.textContent = EMICalculation.formatCurrency(stats.totalAmount, AppState.currency);
+            if (totalEmi) totalEmi.textContent = EMICalculation.formatCurrency(stats.totalEMI, AppState.currency);
         }
 
         function renderRecentLoans(loans) {
             const container = document.getElementById('recent-loans');
+            
+            if (!container) return;
             
             if (!loans || loans.length === 0) {
                 container.innerHTML = '<p class="no-data">No saved loans yet</p>';
@@ -313,15 +373,24 @@
             const displayLoans = loans.slice(0, 5); // Show max 5 recent
 
             displayLoans.forEach(loan => {
+                // Handle both database format and localStorage format
+                const loanName = loan.loan_name || loan.name || 'Untitled Loan';
+                const amount = loan.amount;
+                const rate = loan.interest_rate || loan.interestRate || 0;
+                const tenure = loan.tenure;
+                const emi = loan.emi;
+                const currency = loan.currency || 'INR';
+                const date = loan.created_at || loan.createdAt;
+                
                 html += `
                     <div class="recent-loan-item">
                         <div class="loan-info">
-                            <h4>${escapeHtml(loan.loan_name)}</h4>
-                            <p>${EMICalculation.formatCurrency(loan.amount, loan.currency || 'INR')} | ${loan.interest_rate}% | ${loan.tenure} years</p>
-                            <p class="loan-emi">EMI: ${EMICalculation.formatCurrency(loan.emi, loan.currency || 'INR')}</p>
+                            <h4>${escapeHtml(loanName)}</h4>
+                            <p>${EMICalculation.formatCurrency(amount, currency)} | ${rate}% | ${tenure} years</p>
+                            <p class="loan-emi">EMI: ${EMICalculation.formatCurrency(emi, currency)}</p>
                         </div>
                         <div class="loan-date">
-                            ${new Date(loan.created_at).toLocaleDateString()}
+                            ${new Date(date).toLocaleDateString()}
                         </div>
                     </div>
                 `;
@@ -332,10 +401,20 @@
 
         // Affordability Engine
         function calculateAffordability() {
-            const salary = parseFloat(document.getElementById('monthly-salary').value) || 0;
-            const expenses = parseFloat(document.getElementById('monthly-expenses').value) || 0;
-            const existingEMI1 = parseFloat(document.getElementById('existing-emi-1').value) || 0;
-            const existingEMI2 = parseFloat(document.getElementById('existing-emi-2').value) || 0;
+            const monthlySalary = document.getElementById('monthly-salary');
+            const monthlyExpenses = document.getElementById('monthly-expenses');
+            const existingEmi1 = document.getElementById('existing-emi-1');
+            const existingEmi2 = document.getElementById('existing-emi-2');
+            
+            if (!monthlySalary || !monthlyExpenses || !existingEmi1 || !existingEmi2) {
+                console.error('Affordability form elements not found');
+                return;
+            }
+            
+            const salary = parseFloat(monthlySalary.value) || 0;
+            const expenses = parseFloat(monthlyExpenses.value) || 0;
+            const existingEMI1 = parseFloat(existingEmi1.value) || 0;
+            const existingEMI2 = parseFloat(existingEmi2.value) || 0;
 
             if (salary <= 0) {
                 alert('Please enter your monthly salary');
@@ -363,34 +442,53 @@
             const isEligible = availableIncome > 0 && safeEMIMax > 0;
 
             // Display results
-            document.getElementById('affordability-results').style.display = 'block';
-            document.getElementById('afford-available-income').textContent = EMICalculation.formatCurrency(availableIncome, AppState.currency);
-            document.getElementById('afford-max-emi').textContent = EMICalculation.formatCurrency(maxEMIAllowed, AppState.currency);
-            document.getElementById('afford-existing-emis').textContent = EMICalculation.formatCurrency(totalExistingEMIs, AppState.currency);
-            document.getElementById('afford-risk-level').textContent = riskLevel;
-
+            const resultsDiv = document.getElementById('affordability-results');
+            const availIncomeEl = document.getElementById('afford-available-income');
+            const maxEmiEl = document.getElementById('afford-max-emi');
+            const existingEmisEl = document.getElementById('afford-existing-emis');
+            const riskLevelEl = document.getElementById('afford-risk-level');
             const badge = document.getElementById('eligibility-badge');
-            if (isEligible) {
-                badge.textContent = 'Eligible';
-                badge.className = 'badge badge-success';
-            } else {
-                badge.textContent = 'Not Eligible';
-                badge.className = 'badge badge-danger';
+            const safeEmiRange = document.getElementById('safe-emi-range');
+            const availableIncomeStat = document.getElementById('available-income');
+            
+            if (resultsDiv) resultsDiv.style.display = 'block';
+            if (availIncomeEl) availIncomeEl.textContent = EMICalculation.formatCurrency(availableIncome, AppState.currency);
+            if (maxEmiEl) maxEmiEl.textContent = EMICalculation.formatCurrency(maxEMIAllowed, AppState.currency);
+            if (existingEmisEl) existingEmisEl.textContent = EMICalculation.formatCurrency(totalExistingEMIs, AppState.currency);
+            if (riskLevelEl) riskLevelEl.textContent = riskLevel;
+
+            if (badge) {
+                if (isEligible) {
+                    badge.textContent = 'Eligible';
+                    badge.className = 'badge badge-success';
+                } else {
+                    badge.textContent = 'Not Eligible';
+                    badge.className = 'badge badge-danger';
+                }
             }
 
             // Safe range
-            document.getElementById('safe-emi-range').textContent = 
+            if (safeEmiRange) safeEmiRange.textContent = 
                 `${EMICalculation.formatCurrency(Math.max(0, safeEMIMin), AppState.currency)} - ${EMICalculation.formatCurrency(Math.max(0, safeEMIMax), AppState.currency)}`;
 
             // Update available income in stats
-            document.getElementById('available-income').textContent = EMICalculation.formatCurrency(Math.max(0, availableIncome), AppState.currency);
+            if (availableIncomeStat) availableIncomeStat.textContent = EMICalculation.formatCurrency(Math.max(0, availableIncome), AppState.currency);
         }
 
         // Quick Calculator
         function calculateQuickEMI() {
-            const amount = parseFloat(document.getElementById('quick-amount').value);
-            const rate = parseFloat(document.getElementById('quick-rate').value);
-            const tenure = parseFloat(document.getElementById('quick-tenure').value);
+            const quickAmount = document.getElementById('quick-amount');
+            const quickRate = document.getElementById('quick-rate');
+            const quickTenure = document.getElementById('quick-tenure');
+            
+            if (!quickAmount || !quickRate || !quickTenure) {
+                console.error('Quick calculator form elements not found');
+                return;
+            }
+            
+            const amount = parseFloat(quickAmount.value);
+            const rate = parseFloat(quickRate.value);
+            const tenure = parseFloat(quickTenure.value);
 
             if (!amount || !rate || !tenure) {
                 alert('Please fill in all loan details');
@@ -402,10 +500,15 @@
             if (emiData) {
                 AppState.currentQuickEMI = emiData;
                 
-                document.getElementById('quick-results').style.display = 'block';
-                document.getElementById('quick-emi-value').textContent = EMICalculation.formatCurrency(emiData.emi, AppState.currency);
-                document.getElementById('quick-interest-value').textContent = EMICalculation.formatCurrency(emiData.totalInterest, AppState.currency);
-                document.getElementById('quick-payment-value').textContent = EMICalculation.formatCurrency(emiData.totalPayment, AppState.currency);
+                const quickResults = document.getElementById('quick-results');
+                const quickEmiValue = document.getElementById('quick-emi-value');
+                const quickInterestValue = document.getElementById('quick-interest-value');
+                const quickPaymentValue = document.getElementById('quick-payment-value');
+                
+                if (quickResults) quickResults.style.display = 'block';
+                if (quickEmiValue) quickEmiValue.textContent = EMICalculation.formatCurrency(emiData.emi, AppState.currency);
+                if (quickInterestValue) quickInterestValue.textContent = EMICalculation.formatCurrency(emiData.totalInterest, AppState.currency);
+                if (quickPaymentValue) quickPaymentValue.textContent = EMICalculation.formatCurrency(emiData.totalPayment, AppState.currency);
             }
         }
 
@@ -418,24 +521,32 @@
             const name = prompt('Enter loan name:', 'My Loan');
             if (!name) return;
 
+            const quickAmount = document.getElementById('quick-amount');
+            const quickRate = document.getElementById('quick-rate');
+            const quickTenure = document.getElementById('quick-tenure');
+            
+            if (!quickAmount || !quickRate || !quickTenure) {
+                console.error('Quick calculator form elements not found');
+                return;
+            }
+
             const loanData = {
                 name: name,
-                amount: document.getElementById('quick-amount').value,
-                interestRate: document.getElementById('quick-rate').value,
-                tenure: document.getElementById('quick-tenure').value,
+                amount: quickAmount.value,
+                interestRate: quickRate.value,
+                tenure: quickTenure.value,
                 emi: AppState.currentQuickEMI.emi,
                 totalInterest: AppState.currentQuickEMI.totalInterest,
                 totalPayment: AppState.currentQuickEMI.totalPayment,
                 currency: AppState.currency
             };
 
-            const result = await DatabaseManager.saveLoan(loanData);
-            
-            if (result.success) {
+            // Save to localStorage
+            if (StorageManager.saveLoan(loanData)) {
                 alert('Loan saved successfully!');
                 loadDashboardData();
             } else {
-                alert('Error saving loan: ' + result.error);
+                alert('Error saving loan. Please try again.');
             }
         }
 
@@ -443,6 +554,11 @@
         function generateSmartInsights(loan) {
             const section = document.getElementById('insights-section');
             const container = document.getElementById('smart-insights');
+            
+            if (!section || !container) {
+                console.error('Insights elements not found');
+                return;
+            }
             
             section.style.display = 'block';
 
