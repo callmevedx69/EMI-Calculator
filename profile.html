@@ -44,9 +44,10 @@
                         <span id="user-initial">U</span>
                     </div>
                     <div class="user-details">
-                        <h3 id="user-email">user@example.com</h3>
-                        <p id="user-id">ID: -</p>
-                        <p id="member-since">Member since: -</p>
+                        <span id="displayName">User Name</span>
+                        <p id="displayUsername">@username</p>
+                        <p id="displayEmail">user@email.com</p>
+                        <p id="memberSince">Member since: --/--/----</p>
                     </div>
                 </div>
             </section>
@@ -103,12 +104,36 @@
             <section class="card">
                 <h2>Edit Profile</h2>
                 <div class="form-group">
-                    <label for="userName">Name</label>
-                    <input type="text" id="userName" placeholder="Enter your name">
+                    <label for="name">Name</label>
+                    <input type="text" id="name" placeholder="Enter your name">
                 </div>
                 <div class="form-group">
-                    <label for="userPhoto">Photo URL</label>
-                    <input type="text" id="userPhoto" placeholder="Enter photo URL">
+                    <label for="username">Username</label>
+                    <input type="text" id="username" placeholder="Enter username">
+                </div>
+                <div class="form-group">
+                    <label for="phone">Phone Number</label>
+                    <input type="tel" id="phone" pattern="[0-9]{10}" maxlength="10" placeholder="Enter 10-digit phone number">
+                </div>
+                <div class="form-group">
+                    <label for="age">Age</label>
+                    <input type="number" id="age" placeholder="Enter age">
+                </div>
+                <div class="form-group">
+                    <label for="maritalStatus">Marital Status</label>
+                    <select id="maritalStatus">
+                        <option value="">Select marital status</option>
+                        <option value="single">Unmarried</option>
+                        <option value="married">Married</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="profession">Profession / Status</label>
+                    <input type="text" id="profession" placeholder="Student / Job / Business">
+                </div>
+                <div class="form-group">
+                    <label for="income">Monthly Income</label>
+                    <input type="number" id="income" placeholder="Monthly income">
                 </div>
                 <button type="button" id="saveProfileBtn" class="btn btn-primary">Save Profile</button>
             </section>
@@ -126,10 +151,8 @@
                         </select>
                     </div>
                     <div class="setting-item">
-                        <h4>Theme</h4>
-                        <button id="theme-settings-btn" class="btn btn-secondary">
-                            <span class="theme-icon">🌙</span> Toggle Theme
-                        </button>
+                        <label>Theme</label>
+                        <button id="settingsThemeToggle" class="theme-btn">🌙 Dark Mode</button>
                     </div>
                 </div>
             </section>
@@ -138,10 +161,8 @@
             <section class="card">
                 <h2>Account Actions</h2>
                 <div class="account-actions">
-                    <button id="logout-btn" class="btn btn-secondary">Logout</button>
-                    <button id="delete-account-btn" class="btn btn-danger" style="display: none;">Delete Account</button>
+                    <button id="logoutBtn" class="logout-btn">Logout</button>
                 </div>
-                <p class="note">Note: Deleting your account will remove all saved loans permanently.</p>
             </section>
         </main>
 
@@ -174,87 +195,92 @@
         let loanToDelete = null;
 
         document.addEventListener('DOMContentLoaded', async () => {
-            // Always load profile from localStorage (works even without auth)
+            // Load profile from localStorage
             loadProfileOnPageLoad();
             
+            // Setup auto-save functionality
+            setupAutoSave();
+            
+            // Setup remaining event listeners
+            setupEventListeners();
+            
+            // Load preferences and user profile
             try {
-                // Check auth using Supabase directly
-                const { data, error } = await window.supabaseClient.auth.getSession();
-                console.log("Session:", data);
-                if (!data.session) {
-                    // Don't redirect - allow viewing profile without auth
-                    // window.location.href = 'login.html';
-                    // return;
-                }
-
                 loadPreferences();
+            } catch (e) {
+                console.log('Preferences not loaded');
+            }
+            
+            try {
                 loadUserProfile();
-                setupEventListeners();
-            } catch (err) {
-                console.error('Profile page initialization error:', err);
-                loadPreferences();
-                loadUserProfile();
-                setupEventListeners();
+            } catch (e) {
+                console.log('User profile not loaded - user may not be logged in');
             }
         });
 
         function setupEventListeners() {
-            document.getElementById('themeToggle').addEventListener('click', () => {
-                document.body.classList.toggle('dark-mode');
-                const isDark = document.body.classList.contains('dark-mode');
-                localStorage.setItem('theme', isDark ? 'dark' : 'light');
-                document.getElementById('themeToggle').textContent = isDark ? '☀️' : '🌙';
-                const settingsBtn = document.getElementById('theme-settings-btn');
-                if (settingsBtn) settingsBtn.querySelector('.theme-icon').textContent = isDark ? '☀️' : '🌙';
-            });
-            document.getElementById('theme-settings-btn').addEventListener('click', () => {
-                document.body.classList.toggle('dark-mode');
-                const isDark = document.body.classList.contains('dark-mode');
-                localStorage.setItem('theme', isDark ? 'dark' : 'light');
-                document.getElementById('themeToggle').textContent = isDark ? '☀️' : '🌙';
-                const settingsBtn = document.getElementById('theme-settings-btn');
-                if (settingsBtn) settingsBtn.querySelector('.theme-icon').textContent = isDark ? '☀️' : '🌙';
-            });
-            document.getElementById('logout-btn').addEventListener('click', logout);
-            document.getElementById('logoutBtn').addEventListener('click', async () => {
-                await window.supabaseClient.auth.signOut();
-                window.location.href = 'login.html';
-            });
+            const logoutBtn = document.getElementById('logout-btn');
+            if (logoutBtn) logoutBtn.addEventListener('click', logout);
             
-            document.getElementById('currency').addEventListener('change', (e) => {
+            const logoutNavBtn = document.getElementById('logoutBtn');
+            if (logoutNavBtn) {
+                logoutNavBtn.addEventListener('click', async () => {
+                    await window.supabaseClient.auth.signOut();
+                    window.location.href = 'login.html';
+                });
+            }
+            
+            document.getElementById('currency')?.addEventListener('change', (e) => {
                 localStorage.setItem('emi_currency', e.target.value);
                 renderLoans();
                 updateStats();
             });
 
-            document.getElementById('default-currency').addEventListener('change', (e) => {
+            document.getElementById('default-currency')?.addEventListener('change', (e) => {
                 localStorage.setItem('emi_currency', e.target.value);
-                document.getElementById('currency').value = e.target.value;
+                const currencyEl = document.getElementById('currency');
+                if (currencyEl) currencyEl.value = e.target.value;
                 renderLoans();
                 updateStats();
             });
 
             // Delete modal
-            document.getElementById('cancel-delete').addEventListener('click', hideDeleteModal);
-            document.getElementById('confirm-delete').addEventListener('click', confirmDeleteLoan);
+            document.getElementById('cancel-delete')?.addEventListener('click', hideDeleteModal);
+            document.getElementById('confirm-delete')?.addEventListener('click', confirmDeleteLoan);
         }
 
         async function loadUserProfile() {
             try {
-                const { data } = await window.supabaseClient.auth.getSession();
-                const user = data.session?.user;
+                const { data: userData } = await window.supabaseClient.auth.getUser();
+                const user = userData?.user;
                 if (!user) {
                     window.location.href = 'login.html';
                     return;
                 }
 
-                // Update user info
-                document.getElementById('user-email').textContent = user.email;
-                document.getElementById('user-id').textContent = `ID: ${user.id.substring(0, 8)}...`;
-                document.getElementById('user-initial').textContent = user.email.charAt(0).toUpperCase();
+                // Load profile from localStorage
+                const profile = JSON.parse(localStorage.getItem("profile")) || {};
+
+                // Update user info with correct order: Name → Username → Email
+                document.getElementById("displayName").textContent = profile.name || "User";
+                document.getElementById("displayUsername").textContent = "@" + (profile.username || "username");
+                document.getElementById("displayEmail").textContent = user.email;
                 
-                const created = new Date(user.created_at);
-                document.getElementById('member-since').textContent = `Member since: ${created.toLocaleDateString()}`;
+                // Format "Member Since" date as DD/MM/YYYY
+                const createdAt = user.created_at;
+                const date = new Date(createdAt);
+                const formattedDate = `${String(date.getDate()).padStart(2, '0')}/${String(date.getMonth()+1).padStart(2, '0')}/${date.getFullYear()}`;
+                document.getElementById("memberSince").textContent = "Member since: " + formattedDate;
+
+                // Update user initial for avatar - generate initials from name
+                const name = profile.name || "User";
+                const initials = name
+                    .split(" ")
+                    .map(word => word[0])
+                    .join("")
+                    .toUpperCase()
+                    .substring(0, 2);
+                document.getElementById('user-initial').textContent = initials || "U";
 
                 // Load loans from localStorage
                 const localLoans = StorageManager.getSavedLoans();
@@ -274,8 +300,10 @@
 
                 // Load preferences
                 const savedCurrency = localStorage.getItem('emi_currency') || 'INR';
-                document.getElementById('currency').value = savedCurrency;
-                document.getElementById('default-currency').value = savedCurrency;
+                const currencyEl = document.getElementById('currency');
+                const defaultCurrencyEl = document.getElementById('default-currency');
+                if (currencyEl) currencyEl.value = savedCurrency;
+                if (defaultCurrencyEl) defaultCurrencyEl.value = savedCurrency;
             } catch (err) {
                 console.error('Error loading profile:', err);
             }
@@ -283,7 +311,8 @@
 
         function renderLoans() {
             const container = document.getElementById('loans-list');
-            const currency = document.getElementById('currency').value;
+            const currencyEl = document.getElementById('currency');
+            const currency = currencyEl ? currencyEl.value : 'INR';
 
             if (!loans || loans.length === 0) {
                 container.innerHTML = '<p class="no-data">No saved loans yet. <a href="calculator.html">Calculate your first loan</a></p>';
@@ -337,7 +366,8 @@
         }
 
         function updateStats() {
-            const currency = document.getElementById('currency').value;
+            const currencyEl = document.getElementById('currency');
+            const currency = currencyEl ? currencyEl.value : 'INR';
             
             const totalLoans = loans.length;
             const totalAmount = loans.reduce((sum, l) => sum + (l.amount || 0), 0);
@@ -354,13 +384,13 @@
 
 
         function loadPreferences() {
-            const savedTheme = localStorage.getItem('theme') || localStorage.getItem('emi_theme');
-            if (savedTheme === 'dark') {
-                document.body.classList.add('dark-mode');
-                document.getElementById('themeToggle').textContent = '☀️';
-                const settingsBtn = document.getElementById('theme-settings-btn');
-                if (settingsBtn) settingsBtn.querySelector('.theme-icon').textContent = '☀️';
-            }
+            // Theme is handled by the single theme script at bottom of page
+            // Load currency preference only
+            const savedCurrency = localStorage.getItem('emi_currency') || 'INR';
+            const currencyEl = document.getElementById('currency');
+            const defaultCurrencyEl = document.getElementById('default-currency');
+            if (currencyEl) currencyEl.value = savedCurrency;
+            if (defaultCurrencyEl) defaultCurrencyEl.value = savedCurrency;
         }
 
         async function logout() {
@@ -393,9 +423,9 @@
                 renderLoans();
                 updateStats();
                 hideDeleteModal();
-                alert('Loan deleted successfully!');
+                showToast('Loan deleted successfully!', 'success');
             } else {
-                alert('Error deleting loan. Please try again.');
+                showToast('Error deleting loan', 'error');
             }
         }
 
@@ -414,24 +444,94 @@
             return div.innerHTML;
         }
         
+        // Toast notification function
+        function showToast(message, type) {
+            const toast = document.createElement("div");
+            toast.innerText = message;
+            toast.className = "toast " + type;
+            
+            document.body.appendChild(toast);
+            
+            setTimeout(() => toast.remove(), 2000);
+        }
+        
+        // Phone validation function
+        function isValidPhone(phone) {
+            return /^[0-9]{10}$/.test(phone);
+        }
+        
+        // Auto-save profile function
+        function autoSaveProfile() {
+            const phone = document.getElementById("phone").value;
+            
+            if (phone && !isValidPhone(phone)) {
+                showToast("Enter valid 10-digit phone number", "error");
+                return;
+            }
+            
+            const name = document.getElementById("name");
+            const username = document.getElementById("username");
+            const age = document.getElementById("age");
+            const maritalStatus = document.getElementById("maritalStatus");
+            const profession = document.getElementById("profession");
+            const income = document.getElementById("income");
+            
+            const profile = {
+                name: name.value,
+                username: username.value,
+                phone: phone,
+                age: age.value,
+                marital: maritalStatus.value,
+                profession: profession.value,
+                income: income.value
+            };
+            
+            localStorage.setItem("profile", JSON.stringify(profile));
+            
+            showToast("Profile auto-saved", "success");
+        }
+        
+        // Setup auto-save on input change
+        function setupAutoSave() {
+            const inputs = document.querySelectorAll("#name, #username, #phone, #age, #maritalStatus, #profession, #income");
+            
+            inputs.forEach(input => {
+                input.addEventListener("change", autoSaveProfile);
+            });
+        }
+        
         function saveProfile() {
-            const name = document.getElementById("userName")?.value;
-            const photo = document.getElementById("userPhoto")?.value;
-
-            const profile = { name, photo };
+            const profile = {
+                name: document.getElementById("name")?.value,
+                username: document.getElementById("username")?.value,
+                phone: document.getElementById("phone")?.value,
+                age: document.getElementById("age")?.value,
+                marital: document.getElementById("maritalStatus")?.value,
+                profession: document.getElementById("profession")?.value,
+                income: document.getElementById("income")?.value
+            };
 
             localStorage.setItem("profile", JSON.stringify(profile));
 
-            alert("Profile updated!");
+            showToast("Profile saved successfully!", "success");
         }
         
         function loadProfileOnPageLoad() {
             const profile = JSON.parse(localStorage.getItem("profile"));
 
             if (profile) {
-                const userNameEl = document.getElementById("userName");
-                if (userNameEl) {
-                    userNameEl.value = profile.name || "";
+                document.getElementById("name").value = profile.name || "";
+                document.getElementById("username").value = profile.username || "";
+                document.getElementById("phone").value = profile.phone || "";
+                document.getElementById("age").value = profile.age || "";
+                document.getElementById("maritalStatus").value = profile.marital || "";
+                document.getElementById("profession").value = profile.profession || "";
+                document.getElementById("income").value = profile.income || "";
+                
+                // Show username instead of email in profile header if available
+                const displayNameEl = document.getElementById("displayName");
+                if (displayNameEl) {
+                    displayNameEl.innerText = profile.username || "";
                 }
             }
         }
@@ -441,6 +541,65 @@
         
         // Add event listener for save profile button
         document.getElementById("saveProfileBtn")?.addEventListener("click", saveProfile);
+    </script>
+
+    <!-- Single Theme Implementation -->
+    <script>
+        document.addEventListener("DOMContentLoaded", () => {
+            const toggle = document.getElementById("themeToggle");
+
+            // Load saved theme
+            const savedTheme = localStorage.getItem("theme");
+
+            if (savedTheme === "dark") {
+                document.body.classList.add("dark-mode");
+                if (toggle) toggle.textContent = "☀️";
+                const settingsToggle = document.getElementById("settingsThemeToggle");
+                if (settingsToggle) settingsToggle.textContent = "☀️ Light Mode";
+            } else {
+                if (toggle) toggle.textContent = "🌙";
+                const settingsToggle = document.getElementById("settingsThemeToggle");
+                if (settingsToggle) settingsToggle.textContent = "🌙 Dark Mode";
+            }
+
+            // Toggle click for navbar toggle
+            if (toggle) {
+                toggle.onclick = () => {
+                    document.body.classList.toggle("dark-mode");
+
+                    const isDark = document.body.classList.contains("dark-mode");
+
+                    localStorage.setItem("theme", isDark ? "dark" : "light");
+
+                    toggle.textContent = isDark ? "☀️" : "🌙";
+
+                    // Also update settings toggle
+                    const settingsToggle = document.getElementById("settingsThemeToggle");
+                    if (settingsToggle) {
+                        settingsToggle.textContent = isDark ? "☀️ Light Mode" : "🌙 Dark Mode";
+                    }
+                };
+            }
+
+            // Settings theme toggle
+            document.getElementById("settingsThemeToggle")?.addEventListener("click", () => {
+                document.body.classList.toggle("dark-mode");
+
+                const isDark = document.body.classList.contains("dark-mode");
+
+                localStorage.setItem("theme", isDark ? "dark" : "light");
+
+
+                document.getElementById("settingsThemeToggle").textContent =
+                    isDark ? "☀️ Light Mode" : "🌙 Dark Mode";
+
+                // Also update top navbar toggle
+                const navToggle = document.getElementById("themeToggle");
+                if (navToggle) {
+                    navToggle.textContent = isDark ? "☀️" : "🌙";
+                }
+            });
+        });
     </script>
 </body>
 </html>

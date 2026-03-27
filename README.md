@@ -13,7 +13,6 @@ A comprehensive loan management system with user authentication, cloud storage, 
 - 🧠 **Smart Insights** - AI-free smart suggestions based on your loan
 - 📄 **Enhanced PDF Reports** - Detailed PDF generation with insights
 - 👤 **Profile Management** - View and manage saved loans
-- 🔧 **Admin Panel** - Admin access to view all loans
 
 ## Pages
 
@@ -23,7 +22,6 @@ A comprehensive loan management system with user authentication, cloud storage, 
 4. **calculator.html** - Full EMI calculator with all features
 5. **comparison.html** - Compare multiple loans
 6. **profile.html** - User profile and saved loans management
-7. **admin.html** - Admin panel (requires admin email)
 
 ## Setup Instructions
 
@@ -37,8 +35,7 @@ A comprehensive loan management system with user authentication, cloud storage, 
 ```javascript
 const SUPABASE_CONFIG = {
     url: 'YOUR_SUPABASE_URL',        // e.g., 'https://xyzabc.supabase.co'
-    anonKey: 'YOUR_SUPABASE_ANON_KEY', // Your anon key
-    adminEmail: 'admin@example.com'    // Admin email for panel access
+    anonKey: 'YOUR_SUPABASE_ANON_KEY' // Your anon key
 };
 ```
 
@@ -69,13 +66,6 @@ ALTER TABLE loans ENABLE ROW LEVEL SECURITY;
 CREATE POLICY "Users can manage their own loans" 
 ON loans FOR ALL 
 USING (auth.uid() = user_id);
-
--- Optional: Create policy for admin access
-CREATE POLICY "Admin can view all loans" 
-ON loans FOR SELECT 
-USING (
-    auth.jwt()->>'email' = 'admin@example.com'
-);
 ```
 
 ### 3. Running the App
@@ -115,12 +105,6 @@ USING (
 - View user information and statistics
 - Manage saved loans
 - Change default currency and theme
-
-### Admin Panel
-- Access at `admin.html` (requires admin email configured)
-- View all loans in the system
-- Delete loan records
-- Search and filter loans
 
 ## Tech Stack
 

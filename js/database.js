@@ -22,25 +22,7 @@ const DatabaseManager = (function() {
         }
     }
 
-    /**
-     * Check if user is admin
-     * @returns {boolean}
-     */
-    async function isAdmin() {
-        // For now, we'll check if user email contains 'admin'
-        // In production, you'd check user metadata or roles
-        try {
-            const { data } = await window.supabaseClient.auth.getSession();
-            if (data.session?.user?.email) {
-                return data.session.user.email.toLowerCase().includes('admin');
-            }
-            return false;
-        } catch (err) {
-            return false;
-        }
-    }
-
-    /**
+/**
      * Get loans from localStorage
      * @returns {array}
      */
@@ -313,88 +295,6 @@ const DatabaseManager = (function() {
         }
     }
 
-    /**
-     * Get all loans (Admin only)
-     * @returns {object} - Result with all loans
-     */
-    async function getAllLoans() {
-        try {
-            const admin = await isAdmin();
-            if (!admin) {
-                return { success: false, error: 'Admin access required', loans: [] };
-            }
-
-            const { data, error } = await window.supabaseClient
-                .from(LOANS_TABLE)
-                .select('*')
-                .order('created_at', { ascending: false });
-
-            if (error) {
-                console.error('Error fetching all loans:', error);
-                return { success: false, error: error.message, loans: [] };
-            }
-
-            return { success: true, loans: data || [] };
-        } catch (err) {
-            console.error('Error fetching all loans:', err);
-            return { success: false, error: err.message, loans: [] };
-        }
-    }
-
-    /**
-     * Get all users (Admin only - using auth API)
-     * @returns {object} - Result with user list
-     */
-    async function getAllUsers() {
-        try {
-            const admin = await isAdmin();
-            if (!admin) {
-                return { success: false, error: 'Admin access required', users: [] };
-            }
-
-            // Note: This requires admin privileges in Supabase
-            // For now, we'll return a placeholder
-            // In production, you'd need a cloud function or admin API
-            return { 
-                success: true, 
-                users: [],
-                message: 'User listing requires admin API access'
-            };
-        } catch (err) {
-            console.error('Error fetching users:', err);
-            return { success: false, error: err.message, users: [] };
-        }
-    }
-
-    /**
-     * Delete any loan (Admin only)
-     * @param {string} loanId - Loan ID
-     * @returns {object} - Result with success/error
-     */
-    async function adminDeleteLoan(loanId) {
-        try {
-            const admin = await isAdmin();
-            if (!admin) {
-                return { success: false, error: 'Admin access required' };
-            }
-
-            const { error } = await window.supabaseClient
-                .from(LOANS_TABLE)
-                .delete()
-                .eq('id', loanId);
-
-            if (error) {
-                console.error('Error deleting loan:', error);
-                return { success: false, error: error.message };
-            }
-
-            return { success: true };
-        } catch (err) {
-            console.error('Error deleting loan:', err);
-            return { success: false, error: err.message };
-        }
-    }
-
     // Public API
     return {
         saveLoan: saveLoan,
@@ -402,10 +302,7 @@ const DatabaseManager = (function() {
         getLoanById: getLoanById,
         updateLoan: updateLoan,
         deleteLoan: deleteLoan,
-        getDashboardStats: getDashboardStats,
-        getAllLoans: getAllLoans,
-        getAllUsers: getAllUsers,
-        adminDeleteLoan: adminDeleteLoan
+        getDashboardStats: getDashboardStats
     };
 })();
 
